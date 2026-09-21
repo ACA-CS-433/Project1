@@ -1,6 +1,6 @@
 # CS-433 — Project 1: MICHD risk prediction (BRFSS)
 
-- Competition: <https://www.aicrowd.com/challenges/epfl-machine-learning-project-1>
+- AICrowd: <https://www.aicrowd.com/challenges/epfl-machine-learning-project-1>
 - Deadline: **Thursday, October 29, 2026, 4:00 PM**
 - Final submission: <http://mlcourse.epfl.ch>
 
@@ -35,8 +35,7 @@ AIcrowd team name: `...`
 ## Project constraints
 
 - **Standard Python + NumPy only.** Matplotlib / seaborn are tolerated but
-  *only* for visualization (so in `src/eda.py`, never in
-  `src/implementations.py`, `run.py` or `src/utils/`).
+  only for visualization (never in `implementations.py`, `run.py`,...).
 - No external dataset.
 - Required signatures, not to be modified:
   `mean_squared_error_gd(y, tx, initial_w, max_iters, gamma)`,
