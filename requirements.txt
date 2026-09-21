@@ -1,0 +1,5 @@
+# Project dependencies.
+# The project statement only allows the standard library and NumPy in the submitted code.
+numpy>=1.24
+matplotlib>=3.7
+pytest>=7.0

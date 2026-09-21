@@ -1,0 +1,43 @@
+# --- Data (NEVER commit: too large, and redistribution is forbidden) ---
+data/*
+!data/.gitkeep
+*.csv
+!submissions/sample-submission.csv
+
+# --- Generated submissions ---
+submissions/*.csv
+
+# --- Saved weights / models ---
+*.npy
+*.npz
+!weights/final_weights.npz
+
+# --- Generated figures ---
+figures/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+.pytest_cache/
+
+# --- LaTeX (report) ---
+report/*.aux
+report/*.log
+report/*.out
+report/*.bbl
+report/*.blg
+report/*.synctex.gz
+report/*.fls
+report/*.fdb_latexmk
+report/*.toc
+
+# --- OS / editors ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
