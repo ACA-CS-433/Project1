@@ -1,9 +1,3 @@
-# --- Data (NEVER commit: too large, and redistribution is forbidden) ---
-data/*
-!data/.gitkeep
-*.csv
-!submissions/sample-submission.csv
-
 # --- Generated submissions ---
 submissions/*.csv
 
