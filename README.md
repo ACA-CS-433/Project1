@@ -10,7 +10,7 @@
 |------|--------|------------|
 | Adrien Jangal | [@Ryukriss-f](https://github.com/Ryukriss-f)| adrien.jangal@epfl.ch |
 | Angéline Bignens | [@AngeB21](https://github.com/AngeB21)  | angeline.bignens@epfl.ch |
-| ... | @... | ...@epfl.ch |
+| Clara Emmanuelle Chamaa | [@claraemmanuelle](https://github.com/claraemmanuelle) | clara.chamaa@epfl.ch |
 
 AIcrowd team name: `...`
 
