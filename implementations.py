@@ -14,8 +14,10 @@ Constraints imposed by the project statement:
   - For SGD: mini-batch of size 1 (a single randomly drawn point).
   - All vectors are 1D arrays of shape (X,), never (X, 1).
 """
-
+"""Code in this file has been written with the help of the ML labs code"""
 import numpy as np
+
+from src.helpers import calculate_mse, compute_gradient, batch_iter
 
 """Linear regression using gradient descent.
 
@@ -31,9 +33,19 @@ import numpy as np
 
     """
 def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
-    
-    # TODO
-    raise NotImplementedError
+    #Parameters to store w and loss
+    loss = []
+    w = initial_w
+
+    for n_iter in range(max_iters):
+        grad, error = compute_gradient(y,tx,w)
+        losses = calculate_mse(error)
+        #Update w by its gradient
+        w = w -gamma*grad
+
+        loss.append(losses)
+
+    return w,loss
 
 
 """Linear regression using SGD, mini-batch of size 1.
@@ -49,9 +61,20 @@ def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
         (w, loss): last w and the MSE loss computed on the WHOLE dataset.
 """
 def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
-    
-    # TODO
-    raise NotImplementedError
+    w = initial_w
+
+    for n_iter in range(max_iters):
+        for y_b, x_b in batch_iter(y, tx, num_batches=1, shuffle=True):
+            grad, error = compute_gradient(y_b, x_b, w)
+            # Update w by its gradient
+            w = w - gamma * grad
+
+    _,error=compute_gradient(y, tx, w)
+    #computes the loss on the whole dataset by using the last error
+    loss = calculate_mse(error)
+
+    return w,loss
+
 
 """Least squares using the normal equations.
 
