@@ -33,17 +33,17 @@ from src.helpers import calculate_mse, compute_gradient, batch_iter
 
     """
 def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
-    #Parameters to store w and loss
-    loss = []
     w = initial_w
 
     for n_iter in range(max_iters):
-        grad, error = compute_gradient(y,tx,w)
-        losses = calculate_mse(error)
+        grad, _ = compute_gradient(y,tx,w)
         #Update w by its gradient
         w = w -gamma*grad
 
-        loss.append(losses)
+
+    _, error = compute_gradient(y, tx, w)
+    # computes the loss by using the last error
+    loss = calculate_mse(error)
 
     return w,loss
 
@@ -65,7 +65,7 @@ def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
 
     for n_iter in range(max_iters):
         for y_b, x_b in batch_iter(y, tx, num_batches=1, shuffle=True):
-            grad, error = compute_gradient(y_b, x_b, w)
+            grad, _ = compute_gradient(y_b, x_b, w)
             # Update w by its gradient
             w = w - gamma * grad
 
