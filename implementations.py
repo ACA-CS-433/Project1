@@ -19,20 +19,21 @@ import numpy as np
 
 from src.helpers import calculate_mse, compute_gradient, batch_iter
 
-"""Linear regression using gradient descent.
 
-    Args:
-        y:         ndarray of shape (N,)
-        tx:        ndarray of shape (N, D)
-        initial_w: ndarray of shape (D,), initial weights
-        max_iters: int, number of iterations
-        gamma:     float, learning rate
+def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
+    """Linear regression using gradient descent.
 
-    Returns:
-        (w, loss): last weight vector and its MSE loss.
+        Args:
+            y:         ndarray of shape (N,)
+            tx:        ndarray of shape (N, D)
+            initial_w: ndarray of shape (D,), initial weights
+            max_iters: int, number of iterations
+            gamma:     float, learning rate
+
+        Returns:
+            (w, loss): last weight vector and its MSE loss.
 
     """
-def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
     w = initial_w
 
     for n_iter in range(max_iters):
@@ -48,19 +49,20 @@ def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
     return w,loss
 
 
-"""Linear regression using SGD, mini-batch of size 1.
 
-    Args:
-        y:         ndarray of shape (N,)
-        tx:        ndarray of shape (N, D)
-        initial_w: ndarray of shape (D,)
-        max_iters: int, number of iterations
-        gamma:     float, learning rate
-
-    Returns:
-        (w, loss): last w and the MSE loss computed on the WHOLE dataset.
-"""
 def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
+    """Linear regression using SGD, mini-batch of size 1.
+
+        Args:
+            y:         ndarray of shape (N,)
+            tx:        ndarray of shape (N, D)
+            initial_w: ndarray of shape (D,)
+            max_iters: int, number of iterations
+            gamma:     float, learning rate
+
+        Returns:
+            (w, loss): last w and the MSE loss computed on the WHOLE dataset.
+    """
     w = initial_w
 
     for n_iter in range(max_iters):
