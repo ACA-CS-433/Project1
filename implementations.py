@@ -15,10 +15,12 @@ Constraints imposed by the project statement:
   - All vectors are 1D arrays of shape (X,), never (X, 1).
 """
 
+from src.utils.batch_iter import batch_iter
+from src.utils.calculate_mse import calculate_mse
+from src.utils.compute_gradient import compute_gradient
+
 """Code in this file has been written with the help of the ML labs code"""
 import numpy as np
-
-from src.helpers import calculate_mse, compute_gradient, batch_iter
 
 
 def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
