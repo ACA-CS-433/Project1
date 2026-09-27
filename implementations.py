@@ -14,6 +14,7 @@ Constraints imposed by the project statement:
   - For SGD: mini-batch of size 1 (a single randomly drawn point).
   - All vectors are 1D arrays of shape (X,), never (X, 1).
 """
+
 """Code in this file has been written with the help of the ML labs code"""
 import numpy as np
 
@@ -23,45 +24,43 @@ from src.helpers import calculate_mse, compute_gradient, batch_iter
 def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
     """Linear regression using gradient descent.
 
-        Args:
-            y:         ndarray of shape (N,)
-            tx:        ndarray of shape (N, D)
-            initial_w: ndarray of shape (D,), initial weights
-            max_iters: int, number of iterations
-            gamma:     float, learning rate
+    Args:
+        y:         ndarray of shape (N,)
+        tx:        ndarray of shape (N, D)
+        initial_w: ndarray of shape (D,), initial weights
+        max_iters: int, number of iterations
+        gamma:     float, learning rate
 
-        Returns:
-            (w, loss): last weight vector and its MSE loss.
+    Returns:
+        (w, loss): last weight vector and its MSE loss.
 
     """
     w = initial_w
 
     for n_iter in range(max_iters):
-        grad, _ = compute_gradient(y,tx,w)
-        #Update w by its gradient
-        w = w -gamma*grad
-
+        grad, _ = compute_gradient(y, tx, w)
+        # Update w by its gradient
+        w = w - gamma * grad
 
     _, error = compute_gradient(y, tx, w)
     # computes the loss by using the last error
     loss = calculate_mse(error)
 
-    return w,loss
-
+    return w, loss
 
 
 def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
     """Linear regression using SGD, mini-batch of size 1.
 
-        Args:
-            y:         ndarray of shape (N,)
-            tx:        ndarray of shape (N, D)
-            initial_w: ndarray of shape (D,)
-            max_iters: int, number of iterations
-            gamma:     float, learning rate
+    Args:
+        y:         ndarray of shape (N,)
+        tx:        ndarray of shape (N, D)
+        initial_w: ndarray of shape (D,)
+        max_iters: int, number of iterations
+        gamma:     float, learning rate
 
-        Returns:
-            (w, loss): last w and the MSE loss computed on the WHOLE dataset.
+    Returns:
+        (w, loss): last w and the MSE loss computed on the WHOLE dataset.
     """
     w = initial_w
 
@@ -71,11 +70,11 @@ def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
             # Update w by its gradient
             w = w - gamma * grad
 
-    _,error=compute_gradient(y, tx, w)
-    #computes the loss on the whole dataset by using the last error
+    _, error = compute_gradient(y, tx, w)
+    # computes the loss on the whole dataset by using the last error
     loss = calculate_mse(error)
 
-    return w,loss
+    return w, loss
 
 
 """Least squares using the normal equations.
@@ -87,6 +86,8 @@ def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
     Returns:
         (w, loss): optimal solution and its MSE loss.
 """
+
+
 def least_squares(y, tx):
     # TODO
     raise NotImplementedError
@@ -102,8 +103,10 @@ def least_squares(y, tx):
     Returns:
         (w, loss): solution and its MSE loss WITHOUT the penalty term.
 """
+
+
 def ridge_regression(y, tx, lambda_):
-    
+
     # TODO
     raise NotImplementedError
 
@@ -120,8 +123,10 @@ def ridge_regression(y, tx, lambda_):
     Returns:
         (w, loss): last w and its negative log-likelihood.
 """
+
+
 def logistic_regression(y, tx, initial_w, max_iters, gamma):
-    
+
     # TODO
     raise NotImplementedError
 
@@ -139,7 +144,9 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
     Returns:
         (w, loss): last w and its negative log-likelihood without penalty.
 """
+
+
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
-    
+
     # TODO
     raise NotImplementedError
