@@ -91,9 +91,12 @@ def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
 
 
 def least_squares(y, tx):
-    # TODO
-    raise NotImplementedError
-
+    #implement least squares
+    a = tx.T @ tx
+    b = tx.T @ y
+    w = np.linalg.solve(a, b)
+    mse_loss = calculate_mse(y - tx @ w)
+    return w, mse_loss
 
 """Ridge regression using the normal equations.
 
@@ -108,9 +111,13 @@ def least_squares(y, tx):
 
 
 def ridge_regression(y, tx, lambda_):
-
-    # TODO
-    raise NotImplementedError
+    N = tx.shape[0] #number of samples
+    D = tx.shape[1] #number de features
+    a = tx.T @ tx + 2 * N * lambda_ * np.identity(D)
+    b = tx.T @ y
+    w = np.linalg.solve(a, b)
+    mse_loss = np.mean((y - tx @ w)** 2)/2
+    return w, mse_loss
 
 
 """Logistic regression using gradient descent (y in {0, 1}).
