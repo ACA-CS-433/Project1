@@ -22,7 +22,6 @@ from src.utils.compute_gradient import compute_gradient
 """Code in this file has been written with the help of the ML labs code"""
 import numpy as np
 
-
 """Numerically stable sigmoid, applied element-wise.
 
     Args:
@@ -70,7 +69,9 @@ def compute_logistic_gradient(y, tx, w):
     return tx.T @ (sigmoid(tx @ w) - y) / y.shape[0]
 
 
-"""Linear regression using gradient descent.
+"""Linear regression using gradient descent."""
+
+
 def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
     """Linear regression using gradient descent.
 
@@ -85,12 +86,6 @@ def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
         (w, loss): last weight vector and its MSE loss.
 
     """
-
-
-def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
-
-    # TODO
-    raise NotImplementedError
     w = initial_w
 
     for n_iter in range(max_iters):
@@ -117,13 +112,6 @@ def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
 
     Returns:
         (w, loss): last w and the MSE loss computed on the WHOLE dataset.
-"""
-
-
-def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
-
-    # TODO
-    raise NotImplementedError
     """
     w = initial_w
 
@@ -138,7 +126,6 @@ def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
     loss = calculate_mse(error)
 
     return w, loss
-
 
 
 """Least squares using the normal equations.
@@ -193,13 +180,6 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
         w = w - gamma * compute_logistic_gradient(y, tx, w)
     loss = compute_logistic_loss(y, tx, w)
     return w, loss
-"""
-
-
-def logistic_regression(y, tx, initial_w, max_iters, gamma):
-
-    # TODO
-    raise NotImplementedError
 
 
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
@@ -222,10 +202,3 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
         w = w - gamma * grad
     loss = compute_logistic_loss(y, tx, w)
     return w, loss
-"""
-
-
-def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
-
-    # TODO
-    raise NotImplementedError
