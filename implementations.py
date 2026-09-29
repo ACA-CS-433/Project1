@@ -15,9 +15,16 @@ Constraints imposed by the project statement:
   - All vectors are 1D arrays of shape (X,), never (X, 1).
 """
 
+from src.utils.batch_iter import batch_iter
+from src.utils.calculate_mse import calculate_mse
+from src.utils.compute_gradient import compute_gradient
+
+"""Code in this file has been written with the help of the ML labs code"""
 import numpy as np
 
-"""Linear regression using gradient descent.
+
+def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
+    """Linear regression using gradient descent.
 
     Args:
         y:         ndarray of shape (N,)
@@ -30,13 +37,22 @@ import numpy as np
         (w, loss): last weight vector and its MSE loss.
 
     """
-def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
-    
-    # TODO
-    raise NotImplementedError
+    w = initial_w
+
+    for n_iter in range(max_iters):
+        grad, _ = compute_gradient(y, tx, w)
+        # Update w by its gradient
+        w = w - gamma * grad
+
+    _, error = compute_gradient(y, tx, w)
+    # computes the loss by using the last error
+    loss = calculate_mse(error)
+
+    return w, loss
 
 
-"""Linear regression using SGD, mini-batch of size 1.
+def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
+    """Linear regression using SGD, mini-batch of size 1.
 
     Args:
         y:         ndarray of shape (N,)
@@ -47,11 +63,21 @@ def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
 
     Returns:
         (w, loss): last w and the MSE loss computed on the WHOLE dataset.
-"""
-def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
-    
-    # TODO
-    raise NotImplementedError
+    """
+    w = initial_w
+
+    for n_iter in range(max_iters):
+        for y_b, x_b in batch_iter(y, tx, num_batches=1, shuffle=True):
+            grad, _ = compute_gradient(y_b, x_b, w)
+            # Update w by its gradient
+            w = w - gamma * grad
+
+    _, error = compute_gradient(y, tx, w)
+    # computes the loss on the whole dataset by using the last error
+    loss = calculate_mse(error)
+
+    return w, loss
+
 
 """Least squares using the normal equations.
 
@@ -62,6 +88,8 @@ def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
     Returns:
         (w, loss): optimal solution and its MSE loss.
 """
+
+
 def least_squares(y, tx):
     # TODO
     raise NotImplementedError
@@ -77,8 +105,10 @@ def least_squares(y, tx):
     Returns:
         (w, loss): solution and its MSE loss WITHOUT the penalty term.
 """
+
+
 def ridge_regression(y, tx, lambda_):
-    
+
     # TODO
     raise NotImplementedError
 
@@ -95,8 +125,10 @@ def ridge_regression(y, tx, lambda_):
     Returns:
         (w, loss): last w and its negative log-likelihood.
 """
+
+
 def logistic_regression(y, tx, initial_w, max_iters, gamma):
-    
+
     # TODO
     raise NotImplementedError
 
@@ -114,7 +146,9 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
     Returns:
         (w, loss): last w and its negative log-likelihood without penalty.
 """
+
+
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
-    
+
     # TODO
     raise NotImplementedError
