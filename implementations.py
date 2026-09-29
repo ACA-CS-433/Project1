@@ -128,7 +128,8 @@ def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
     return w, loss
 
 
-"""Least squares using the normal equations.
+def least_squares(y, tx):
+    """Least squares using the normal equations.
 
     Args:
         y:  ndarray of shape (N,)
@@ -136,10 +137,7 @@ def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
 
     Returns:
         (w, loss): optimal solution and its MSE loss.
-"""
-
-
-def least_squares(y, tx):
+    """
     #implement least squares
     a = tx.T @ tx
     b = tx.T @ y
@@ -147,7 +145,11 @@ def least_squares(y, tx):
     mse_loss = calculate_mse(y - tx @ w)
     return w, mse_loss
 
-"""Ridge regression using the normal equations.
+
+
+
+def ridge_regression(y, tx, lambda_):
+    """Ridge regression using the normal equations.
 
     Args:
         y:       ndarray of shape (N,)
@@ -156,10 +158,7 @@ def least_squares(y, tx):
 
     Returns:
         (w, loss): solution and its MSE loss WITHOUT the penalty term.
-"""
-
-
-def ridge_regression(y, tx, lambda_):
+    """
     N = tx.shape[0] #number of samples
     D = tx.shape[1] #number de features
     a = tx.T @ tx + 2 * N * lambda_ * np.identity(D)
