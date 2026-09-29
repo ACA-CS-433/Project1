@@ -15,6 +15,11 @@ Constraints imposed by the project statement:
   - All vectors are 1D arrays of shape (X,), never (X, 1).
 """
 
+from src.utils.batch_iter import batch_iter
+from src.utils.calculate_mse import calculate_mse
+from src.utils.compute_gradient import compute_gradient
+
+"""Code in this file has been written with the help of the ML labs code"""
 import numpy as np
 
 
@@ -66,6 +71,8 @@ def compute_logistic_gradient(y, tx, w):
 
 
 """Linear regression using gradient descent.
+def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
+    """Linear regression using gradient descent.
 
     Args:
         y:         ndarray of shape (N,)
@@ -84,9 +91,22 @@ def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
 
     # TODO
     raise NotImplementedError
+    w = initial_w
+
+    for n_iter in range(max_iters):
+        grad, _ = compute_gradient(y, tx, w)
+        # Update w by its gradient
+        w = w - gamma * grad
+
+    _, error = compute_gradient(y, tx, w)
+    # computes the loss by using the last error
+    loss = calculate_mse(error)
+
+    return w, loss
 
 
-"""Linear regression using SGD, mini-batch of size 1.
+def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
+    """Linear regression using SGD, mini-batch of size 1.
 
     Args:
         y:         ndarray of shape (N,)
@@ -104,6 +124,21 @@ def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
 
     # TODO
     raise NotImplementedError
+    """
+    w = initial_w
+
+    for n_iter in range(max_iters):
+        for y_b, x_b in batch_iter(y, tx, num_batches=1, shuffle=True):
+            grad, _ = compute_gradient(y_b, x_b, w)
+            # Update w by its gradient
+            w = w - gamma * grad
+
+    _, error = compute_gradient(y, tx, w)
+    # computes the loss on the whole dataset by using the last error
+    loss = calculate_mse(error)
+
+    return w, loss
+
 
 
 """Least squares using the normal equations.
@@ -158,6 +193,13 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
         w = w - gamma * compute_logistic_gradient(y, tx, w)
     loss = compute_logistic_loss(y, tx, w)
     return w, loss
+"""
+
+
+def logistic_regression(y, tx, initial_w, max_iters, gamma):
+
+    # TODO
+    raise NotImplementedError
 
 
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
@@ -180,3 +222,10 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
         w = w - gamma * grad
     loss = compute_logistic_loss(y, tx, w)
     return w, loss
+"""
+
+
+def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
+
+    # TODO
+    raise NotImplementedError
