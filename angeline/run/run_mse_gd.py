@@ -60,9 +60,9 @@ def main():
     # 3. Training the final model
     initial_w = np.zeros(tx_train.shape[1])
 
-    # gradient descent parameters
+    # best gradient descent parameters
     max_iters = 1000
-    gamma = 0.001
+    gamma = 0.01
 
     w, loss = mean_squared_error_gd(y_train, tx_train, initial_w, max_iters, gamma)
 
