@@ -12,7 +12,7 @@
 | Angéline Bignens | [@AngeB21](https://github.com/AngeB21)  | angeline.bignens@epfl.ch |
 | Clara Emmanuelle Chamaa | [@claraemmanuelle](https://github.com/claraemmanuelle) | clara.chamaa@epfl.ch |
 
-AIcrowd team name: `...`
+AIcrowd team name: `ACA`
 
 ## Repository structure
 
