@@ -57,12 +57,16 @@ def main():
     tx_train = (x_train - mean_x) / std_x
     tx_test = (x_test - mean_x) / std_x
 
+    # Add a bias column
+    tx_train = np.c_[np.ones(tx_train.shape[0]), tx_train]
+    tx_test = np.c_[np.ones(tx_test.shape[0]), tx_test]
+
     # 3. Training the final model
     initial_w = np.zeros(tx_train.shape[1])
 
     # best sgd parameters
-    max_iters = 2000000
-    gamma = 0.00000139
+    max_iters = 750000
+    gamma = 0.00000955
 
     w, loss = mean_squared_error_sgd(y_train, tx_train, initial_w, max_iters, gamma)
 

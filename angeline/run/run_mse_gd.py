@@ -57,12 +57,18 @@ def main():
     tx_train = (x_train - mean_x) / std_x
     tx_test = (x_test - mean_x) / std_x
 
+    # Add a bias column
+    tx_train = np.c_[np.ones(tx_train.shape[0]), tx_train]
+    tx_test = np.c_[np.ones(tx_test.shape[0]), tx_test]
+
     # 3. Training the final model
     initial_w = np.zeros(tx_train.shape[1])
 
     # best gradient descent parameters
-    max_iters = 1000
-    gamma = 0.01
+    # max iters =     1000 | gamma = 0.06309573 | validation loss = 0.13746214 | f1 score = 0.4093
+    # max iters =      750 | gamma = 0.06309573 | validation loss = 0.13747723 | f1 score = 0.4095
+    max_iters = 750
+    gamma = 0.06309573
 
     w, loss = mean_squared_error_gd(y_train, tx_train, initial_w, max_iters, gamma)
 
