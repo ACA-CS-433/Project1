@@ -12,7 +12,7 @@ sys.path.insert(0, PROJECT_ROOT)
 
 from src.helpers import load_csv_data, create_csv_submission
 from src.utils.preprocessing import load_feature_names, fit_preprocessing, transform
-from src.utils.cross_validation import cross_validate, cv_f1
+from src.utils.cross_validation2 import cross_validate, cv_f1
 from implementations import reg_logistic_regression, sigmoid
 
 SEED = 1
