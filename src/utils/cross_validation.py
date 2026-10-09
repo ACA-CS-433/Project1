@@ -50,7 +50,7 @@ def cross_validation_mse(y, x, k_indices, k, max_iters, gamma, method):
     y_pred = x_te.dot(w)
     # therehold depending on the quantiles, because the data are inbalanced
     threshold = np.quantile(y_pred, np.linspace(0.5, 0.99, 50))
-    f1s= [f1_score(y_te, np.where(y_pred >= t, 1, -1)) for t in threshold]
+    f1s = [f1_score(y_te, np.where(y_pred >= t, 1, -1)) for t in threshold]
     index = int(np.argmax(f1s))
 
     return float(loss_tr), float(loss_te), float(f1s[index]), float(threshold[index])
@@ -96,7 +96,7 @@ def cross_validation_mse_demo(y, x, k_fold, max_iters, gammas, seed, method):
             tr_tmp = []
             te_tmp = []
             f1_tmp = []
-            threshold_tmp =  []
+            threshold_tmp = []
             for k in range(k_fold):
                 fold_tr, fold_te, f1, threshold = cross_validation_mse(
                     y, x, k_indices, k, max_iter, gamma, method
@@ -108,7 +108,7 @@ def cross_validation_mse_demo(y, x, k_fold, max_iters, gammas, seed, method):
             loss_tr[i, j] = np.mean(tr_tmp)
             loss_te[i, j] = np.mean(te_tmp)
             f1_te[i, j] = np.mean(f1_tmp)
-            threshold_te[i,j] = np.mean(threshold_tmp)
+            threshold_te[i, j] = np.mean(threshold_tmp)
 
             print(
                 f"max iters = {max_iter:8d} | gamma = {gamma:.8f} | validation loss = {loss_te[i, j]:.8f} | f1 score = {f1_te[i, j]:.4f} | threshold = {threshold_te[i, j]:.4f}"
