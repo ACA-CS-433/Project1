@@ -82,6 +82,23 @@ EXTRA_MISSING_CODES = {
 
 FORCE_CATEGORICAL = {"_STATE"}
 
+# Key cardiovascular risk factors whose pairwise products are added when
+# interactions=True. Value None = numeric (ordinal) column, an int v = the
+# indicator (column == v) for non-ordinal codes.
+INTERACTION_VARIABLES = {
+    "_AGE80": None,     # age
+    "SEX": None,        # 1 male, 2 female
+    "GENHLTH": None,    # 1 excellent ... 5 poor
+    "_RFHYPE5": None,   # 2 = high blood pressure
+    "_RFCHOL": None,    # 2 = high cholesterol
+    "DIABETE3": 1,      # diabetes
+    "CVDSTRK3": 1,      # stroke
+    "CHCKIDNY": 1,      # kidney disease
+    "_SMOKER3": None,   # 1 daily smoker ... 4 never smoked
+    "DIFFWALK": 1,      # difficulty walking
+    "_BMI5": None,      # body mass index
+}
+
 
 def load_feature_names(data_path):
     """Feature names of x_train.csv (without the Id column), read-only."""
@@ -160,6 +177,7 @@ def fit_preprocessing(
     min_freq=0.01,
     clip_quantile=0.01,
     degree=2,
+    interactions=False,
 ):
     """Learn every preprocessing statistic on the training set.
 
@@ -176,6 +194,7 @@ def fit_preprocessing(
         clip_quantile:  continuous values are clipped to the
                         [q, 1 - q] quantiles
         degree:         1 = linear continuous features, 2 = also add squares
+        interactions:   add the pairwise products of INTERACTION_VARIABLES
 
     Returns:
         dict of parameters used by transform().
@@ -218,11 +237,26 @@ def fit_preprocessing(
                 continue
             continuous.append((j, name, low, high, median, mean, std, add_nan))
 
+    # standardized risk factors (median-imputed) for the pairwise products
+    risk_factors = []
+    if interactions:
+        for name, value in INTERACTION_VARIABLES.items():
+            j = names.index(name)
+            col = x[:, j]
+            if value is not None:
+                col = np.where(np.isnan(col), np.nan, (col == value).astype(float))
+            median = np.nanmedian(col)
+            filled = np.where(np.isnan(col), median, col)
+            mean, std = filled.mean(), filled.std()
+            if std > 0:
+                risk_factors.append((j, name, value, median, mean, std))
+
     params = {
         "rules": rules,
         "categorical": categorical,
         "continuous": continuous,
         "degree": degree,
+        "risk_factors": risk_factors,
     }
     params["feature_names"] = _feature_names(params)
 
@@ -284,6 +318,17 @@ def _build_features(x, params):
             tx[:, k] = is_nan
             k += 1
 
+    z = []
+    for j, _, value, median, mean, std in params["risk_factors"]:
+        col = x[:, j]
+        if value is not None:
+            col = np.where(np.isnan(col), np.nan, (col == value).astype(float))
+        z.append((np.where(np.isnan(col), median, col) - mean) / std)
+    for a in range(len(z)):
+        for b in range(a + 1, len(z)):
+            tx[:, k] = z[a] * z[b]
+            k += 1
+
     return tx
 
 
@@ -300,4 +345,8 @@ def _feature_names(params):
             out.append(f"{name}^2")
         if add_nan:
             out.append(f"{name}=nan")
+    risk = [name for _, name, *_rest in params["risk_factors"]]
+    for a in range(len(risk)):
+        for b in range(a + 1, len(risk)):
+            out.append(f"{risk[a]}*{risk[b]}")
     return out
