@@ -65,10 +65,13 @@ def main():
     initial_w = np.zeros(tx_train.shape[1])
 
     # best sgd parameters
+    # max iters =   750000 | gamma = 0.00000955 | validation loss = 0.13805878 | f1 score = 0.4058 | threshold = -0.5828
     max_iters = 750000
     gamma = 0.00000955
+    best_thd = -0.5828
 
     w, loss = mean_squared_error_sgd(y_train, tx_train, initial_w, max_iters, gamma)
+    w[0] -= best_thd
 
     print("Training loss:", loss)
 

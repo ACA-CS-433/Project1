@@ -1,4 +1,3 @@
-
 import numpy as np
 
 from src.utils.metrics import best_threshold, f1_score
@@ -66,7 +65,9 @@ def cv_f1(scores, labels, fold_ids):
     """
     threshold, _ = best_threshold(scores, labels)
     f1s = [
-        f1_score(labels[fold_ids == k], (scores[fold_ids == k] >= threshold).astype(int))
+        f1_score(
+            labels[fold_ids == k], (scores[fold_ids == k] >= threshold).astype(int)
+        )
         for k in np.unique(fold_ids)
     ]
     return threshold, float(np.mean(f1s)), float(np.std(f1s))

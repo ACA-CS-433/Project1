@@ -69,8 +69,10 @@ def main():
     # max iters =      750 | gamma = 0.06309573 | validation loss = 0.13747723 | f1 score = 0.4095
     max_iters = 750
     gamma = 0.06309573
+    best_thd = -0.4602
 
     w, loss = mean_squared_error_gd(y_train, tx_train, initial_w, max_iters, gamma)
+    w[0] -= best_thd
 
     print("Training loss:", loss)
 
