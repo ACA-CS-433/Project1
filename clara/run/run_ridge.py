@@ -1,0 +1,83 @@
+"""
+run_ridge.py
+
+Reproducibility script: trains ridge regression with the best lambda found by
+cross-validation (see visualize_ridge.py), tunes the decision threshold on F1,
+and writes the submission file.
+"""
+
+"""Code in this file has been written with the help of the ML labs code & LLM"""
+
+import os
+
+import numpy as np
+
+from src.helpers import load_csv_data, create_csv_submission
+from implementations import ridge_regression
+from src.utils.cross_validation import best_threshold
+from src.utils.f1_score import f1_score
+
+SEED = 1
+
+# go up 2 levels
+PROJECT_ROOT = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
+DATA_PATH = os.path.join(PROJECT_ROOT, "data")
+OUTPUT_PATH = os.path.join(PROJECT_ROOT, "submissions", "submission_ridge.csv")
+
+
+def main():
+    np.random.seed(SEED)
+
+    print("Processing data...")
+    # 1. Loading
+    x_train, x_test, y_train, train_ids, test_ids = load_csv_data(DATA_PATH)
+
+    print("Training data shape: ", x_train.shape)
+    print("Test data shape: ", x_test.shape)
+    print("Labels shape: ", y_train.shape)
+
+    # 2. Preprocessing (same as the other methods, so results are comparable)
+    # Handle missing values
+    feature_mean = np.nanmean(x_train, axis=0)
+
+    x_train = np.where(np.isnan(x_train), feature_mean, x_train)
+    x_test = np.where(np.isnan(x_test), feature_mean, x_test)
+    # Scale the features
+    mean_x = np.mean(x_train, axis=0)
+    std_x = np.std(x_train, axis=0)
+
+    # Avoiding division by 0
+    std_x[std_x == 0] = 1
+    tx_train = (x_train - mean_x) / std_x
+    tx_test = (x_test - mean_x) / std_x
+
+    # Add a bias column
+    tx_train = np.c_[np.ones(tx_train.shape[0]), tx_train]
+    tx_test = np.c_[np.ones(tx_test.shape[0]), tx_test]
+
+    # 3. Training the final model on all the training data
+    #BEST_LAMBDA = 7.197e-06 | best_f1 = 0.409891 | best_loss = 0.136942
+    # ridge (lambda = 0): f1 = 0.409714
+    BEST_LAMBDA = 7.197e-06  # found by cross-validation in visualize_ridge.py
+    w, loss = ridge_regression(y_train, tx_train, BEST_LAMBDA)
+    print("Training loss:", loss)
+
+    # 4. Decision threshold: the scores are real numbers, positives are rare,
+    # so we choose the threshold that maximizes F1 on the training scores
+    t, f1_train = best_threshold(y_train, tx_train @ w)
+    print(f"Threshold = {t:.4f} | training F1 = {f1_train:.4f}")
+
+    # 5. Prediction
+    scores_test = tx_test @ w
+    # required by the submission format
+    y_pred = np.where(scores_test >= t, 1, -1)
+
+    # 6. Writing the submission file
+    create_csv_submission(test_ids, y_pred, OUTPUT_PATH)
+
+
+if __name__ == "__main__":
+    main()
