@@ -86,17 +86,17 @@ FORCE_CATEGORICAL = {"_STATE"}
 # interactions=True. Value None = numeric (ordinal) column, an int v = the
 # indicator (column == v) for non-ordinal codes.
 INTERACTION_VARIABLES = {
-    "_AGE80": None,     # age
-    "SEX": None,        # 1 male, 2 female
-    "GENHLTH": None,    # 1 excellent ... 5 poor
-    "_RFHYPE5": None,   # 2 = high blood pressure
-    "_RFCHOL": None,    # 2 = high cholesterol
-    "DIABETE3": 1,      # diabetes
-    "CVDSTRK3": 1,      # stroke
-    "CHCKIDNY": 1,      # kidney disease
-    "_SMOKER3": None,   # 1 daily smoker ... 4 never smoked
-    "DIFFWALK": 1,      # difficulty walking
-    "_BMI5": None,      # body mass index
+    "_AGE80": None,  # age
+    "SEX": None,  # 1 male, 2 female
+    "GENHLTH": None,  # 1 excellent ... 5 poor
+    "_RFHYPE5": None,  # 2 = high blood pressure
+    "_RFCHOL": None,  # 2 = high cholesterol
+    "DIABETE3": 1,  # diabetes
+    "CVDSTRK3": 1,  # stroke
+    "CHCKIDNY": 1,  # kidney disease
+    "_SMOKER3": None,  # 1 daily smoker ... 4 never smoked
+    "DIFFWALK": 1,  # difficulty walking
+    "_BMI5": None,  # body mass index
 }
 
 

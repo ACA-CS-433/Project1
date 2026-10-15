@@ -77,7 +77,7 @@ def parse_args():
     are needed.
     """
     parser.add_argument("--max-iters", type=int, default=500)
-    
+
     """
     Learning rate(s) of gradient descent; several values = grid search.
     About 0.5 for logistic models (1.0 diverges), much smaller

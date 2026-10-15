@@ -7,6 +7,7 @@ from src.utils.build_k_indices import build_k_indices
 from src.utils.calculate_mse import calculate_mse
 from src.utils.compute_gradient import compute_gradient
 from src.utils.f1_score import f1_score
+from src.utils.metrics import best_threshold
 
 
 def cross_validation_mse(y, x, k_indices, k, max_iters, gamma, method):
@@ -71,7 +72,8 @@ def cross_validation_mse_demo(y, x, k_fold, max_iters, gammas, seed, method):
         best_gamma:     scalar, value of the best gamma
         best_max_iters: scalar, value of the best max_iters
         best_loss:      scalar, the associated loss for the best gamma/max_iters
-        best_f1         scalar, the associated f1 score for the best gamma/max_iters
+        best_f1:         scalar, the associated f1 score for the best gamma/max_iters
+        best_threshold:  scalar, the best threshold associated with the f1 score
         f1_te:          f1_score
         loss_tr:        training loss
         loss_te:        validation (test) loss
@@ -115,12 +117,21 @@ def cross_validation_mse_demo(y, x, k_fold, max_iters, gammas, seed, method):
             )
 
     # Find best combination, select by loss score
-    best_i, best_j = np.unravel_index(np.argmin(loss_te), loss_te.shape)
+    best_i, best_j = np.unravel_index(np.argmax(f1_te), f1_te.shape)
     best_gamma = gammas[best_j]
     best_max_iters = max_iters[best_i]
     best_loss = loss_te[best_i, best_j]
     # best combination, for f1 score
-    best_k, best_l = np.unravel_index(np.argmax(f1_te), f1_te.shape)
-    best_f1 = f1_te[best_k, best_l]
+    best_f1 = f1_te[best_i, best_j]
+    best_th = threshold_te[best_i, best_j]
 
-    return best_gamma, best_max_iters, best_loss, best_f1, f1_te, loss_tr, loss_te
+    return (
+        best_gamma,
+        best_max_iters,
+        best_loss,
+        best_f1,
+        best_th,
+        f1_te,
+        loss_tr,
+        loss_te,
+    )

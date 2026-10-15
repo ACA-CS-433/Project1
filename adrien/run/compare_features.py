@@ -58,7 +58,9 @@ def learning_curve(y, tx, initial_w):
     y_tr, tx_tr, y_va, tx_va = y[:last], tx[:last], y[last:], tx[last:]
     w = initial_w
     for it in range(CURVE_STEP, CURVE_ITERS + 1, CURVE_STEP):
-        w, train_loss = reg_logistic_regression(y_tr, tx_tr, LAMBDA, w, CURVE_STEP, GAMMA)
+        w, train_loss = reg_logistic_regression(
+            y_tr, tx_tr, LAMBDA, w, CURVE_STEP, GAMMA
+        )
         val_loss = compute_logistic_loss(y_va, tx_va, w)
         _, val_f1 = best_threshold(sigmoid(tx_va @ w), y_va)
         print(
@@ -97,7 +99,9 @@ def main():
         # keep the true class balance
         def train(y_, tx_):
             y_, tx_ = oversample_positives(y_, tx_, ratio)
-            return reg_logistic_regression(y_, tx_, LAMBDA, initial_w, MAX_ITERS, GAMMA)[0]
+            return reg_logistic_regression(
+                y_, tx_, LAMBDA, initial_w, MAX_ITERS, GAMMA
+            )[0]
 
         scores, labels, folds = cross_validate(y, tx, train, predict, K_FOLD)
         th, f1_mean, f1_std = cv_f1(scores, labels, folds)
@@ -109,7 +113,9 @@ def main():
 
     print("\n=== Summary ===")
     for label, n_features, f1_mean, f1_std in results:
-        print(f"{label:<30} features={n_features:<5} cv_F1={f1_mean:.4f} +/- {f1_std:.4f}")
+        print(
+            f"{label:<30} features={n_features:<5} cv_F1={f1_mean:.4f} +/- {f1_std:.4f}"
+        )
 
 
 if __name__ == "__main__":
