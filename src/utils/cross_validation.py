@@ -157,7 +157,7 @@ def cross_validation_ridge(y, x, k_indices, k, lambda_):
         k_indices:  array from build_k_indices()
         k:          scalar, index of the validation fold
         lambda_:    ridge parameter
-       
+
     Returns:
         loss_tr: training loss
         loss_te: validation (test) loss,
@@ -169,7 +169,6 @@ def cross_validation_ridge(y, x, k_indices, k, lambda_):
     tr_idx = k_indices[np.arange(k_indices.shape[0]) != k].reshape(-1)
     y_tr, y_te = y[tr_idx], y[te_idx]
     x_tr, x_te = x[tr_idx], x[te_idx]
-
 
     w, loss_tr = fit_model(y_tr, x_tr, lambda_)
 
@@ -207,16 +206,18 @@ def cross_validation_ridge_demo(y, x, k_fold, lambdas, seed):
     """
     k_indices = build_k_indices(y, k_fold, seed)
     n = len(lambdas)
-    #define arrays to store the losses and f1 scores for each lambda
+    # define arrays to store the losses and f1 scores for each lambda
     loss_tr, loss_te = np.zeros(n), np.zeros(n)
     f1_mean, f1_std = np.zeros(n), np.zeros(n)
 
     # cross validation over lambdas
     for i, lam in enumerate(lambdas):
-        #res contains the training loss, validation loss and f1 score for each fold
-        res = np.array([cross_validation_ridge(y, x, k_indices, k, lam) for k in range(k_fold)])
-        
-        #computes the mean and std of the training loss, validation loss and f1 score over the folds
+        # res contains the training loss, validation loss and f1 score for each fold
+        res = np.array(
+            [cross_validation_ridge(y, x, k_indices, k, lam) for k in range(k_fold)]
+        )
+
+        # computes the mean and std of the training loss, validation loss and f1 score over the folds
         loss_tr[i], loss_te[i], f1_mean[i] = res.mean(axis=0)
         f1_std[i] = res[:, 2].std()
 
@@ -225,7 +226,15 @@ def cross_validation_ridge_demo(y, x, k_fold, lambdas, seed):
             f"f1 score = {f1_mean[i]:.4f} +/- {f1_std[i]:.4f}"
         )
 
-    #find index for the best lambda based on the mean f1 score
+    # find index for the best lambda based on the mean f1 score
     best_i = int(np.argmax(f1_mean))
 
-    return lambdas[best_i], f1_mean[best_i], loss_te[best_i], f1_mean, f1_std, loss_tr, loss_te
+    return (
+        lambdas[best_i],
+        f1_mean[best_i],
+        loss_te[best_i],
+        f1_mean,
+        f1_std,
+        loss_tr,
+        loss_te,
+    )

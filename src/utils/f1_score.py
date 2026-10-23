@@ -1,6 +1,7 @@
 import numpy as np
 
-#the f1 score 
+
+# the f1 score
 def f1_score(y_true, y_pred):
     """
 

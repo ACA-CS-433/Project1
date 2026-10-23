@@ -59,7 +59,7 @@ def main():
     tx_test = np.c_[np.ones(tx_test.shape[0]), tx_test]
 
     # 3. Training the final model on all the training data
-    #BEST_LAMBDA = 7.197e-06 | best_f1 = 0.409891 | best_loss = 0.136942
+    # BEST_LAMBDA = 7.197e-06 | best_f1 = 0.409891 | best_loss = 0.136942
     # ridge (lambda = 0): f1 = 0.409714
     BEST_LAMBDA = 7.197e-06  # found by cross-validation in visualize_ridge.py
     w, loss = ridge_regression(y_train, tx_train, BEST_LAMBDA)

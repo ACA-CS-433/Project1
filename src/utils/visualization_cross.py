@@ -29,7 +29,12 @@ def plot_f1_vs_lambda(lambdas, f1_mean, f1_std=None, best_lambda=None):
     plt.fill_between(lam, mean - std, mean + std, alpha=0.2, label="± 1 std")
 
     if best_lambda is not None and best_lambda > 0:
-        plt.axvline(best_lambda, color="red", linestyle="--", label=f"best lambda = {best_lambda:.1e}")
+        plt.axvline(
+            best_lambda,
+            color="red",
+            linestyle="--",
+            label=f"best lambda = {best_lambda:.1e}",
+        )
 
     plt.xscale("log")
     plt.xlabel("lambda")
@@ -55,7 +60,12 @@ def plot_loss_vs_lambda(lambdas, loss_tr, loss_te, best_lambda=None):
     plt.plot(lam, te, marker="o", label="validation loss")
 
     if best_lambda is not None and best_lambda > 0:
-        plt.axvline(best_lambda, color="red", linestyle="--", label=f"best lambda = {best_lambda:.1e}")
+        plt.axvline(
+            best_lambda,
+            color="red",
+            linestyle="--",
+            label=f"best lambda = {best_lambda:.1e}",
+        )
 
     plt.xscale("log")
     plt.xlabel("lambda")
@@ -66,6 +76,7 @@ def plot_loss_vs_lambda(lambdas, loss_tr, loss_te, best_lambda=None):
     plt.tight_layout()
     plt.savefig("figures/loss_vs_lambda.png", dpi=150)
     plt.close()
+
 
 def plot_ridge_summary(lambdas, f1_mean, f1_std, loss_tr, loss_te, best_lambda=None):
     """Side-by-side figure: F1 vs lambda (left) and losses vs lambda (right).
