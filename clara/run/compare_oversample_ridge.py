@@ -4,7 +4,7 @@ compare_oversample_ridge.py
 Idea 1 of the ridge ablation: oversample the positives in the TRAINING folds
 only, then compare the CV F1 for ratio 1 (baseline), 2 and 3.
 
-Setup = the agreed one: 5 folds, seed 1 (build_k_indices), same preprocessing
+Setup = 5 folds, seed 1 (build_k_indices), same preprocessing
 as the 0.441 run (degree 1, interactions, default max_nan_ratio), lambda 1e-2.
 The decision threshold is tuned on the (non-oversampled) training scores of
 each fold and applied to the validation fold, exactly as in

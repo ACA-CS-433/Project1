@@ -106,9 +106,7 @@ def main():
     try:
         for label, extra in VARIANTS:
             preprocessing.INTERACTION_VARIABLES = {**BASE, **extra}
-            params = fit_preprocessing(
-                x_train, names, degree=DEGREE, interactions=True
-            )
+            params = fit_preprocessing(x_train, names, degree=DEGREE, interactions=True)
             tx = transform(x_train, names, params)
             f1_mean, f1_std = cv_f1_ridge(y_train, tx, k_indices)
             rows.append((label, tx.shape[1], f1_mean, f1_std))
