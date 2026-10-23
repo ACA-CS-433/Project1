@@ -15,6 +15,7 @@ import numpy as np
 
 from src.helpers import load_csv_data
 from src.utils.cross_validation import cross_validation_ridge_demo
+from src.utils.preprocessing import fit_preprocessing, load_feature_names, transform
 from src.utils.visualization_cross import (
     plot_f1_vs_lambda,
     plot_loss_vs_lambda,
@@ -49,23 +50,10 @@ def main():
     print("Labels shape: ", y_train.shape)
 
     # 2. Preprocessing
-    # Handle missing values
-    feature_mean = np.nanmean(x_train, axis=0)
-
-    x_train = np.where(np.isnan(x_train), feature_mean, x_train)
-    x_test = np.where(np.isnan(x_test), feature_mean, x_test)
-    # Scale the features
-    mean_x = np.mean(x_train, axis=0)
-    std_x = np.std(x_train, axis=0)
-
-    # Avoiding division by 0
-    std_x[std_x == 0] = 1
-    tx_train = (x_train - mean_x) / std_x
-    tx_test = (x_test - mean_x) / std_x
-
-    # Add a bias column
-    tx_train = np.c_[np.ones(tx_train.shape[0]), tx_train]
-    tx_test = np.c_[np.ones(tx_test.shape[0]), tx_test]
+    names = load_feature_names(DATA_PATH)
+    params = fit_preprocessing(x_train, names, degree=1, interactions=False)
+    tx_train = transform(x_train, names, params)
+    print(tx_train.shape)  # check the number of feature
 
     # 3. Cross validation
     best_lambda, best_f1, best_loss, f1_mean, f1_std, loss_tr, loss_te = (
