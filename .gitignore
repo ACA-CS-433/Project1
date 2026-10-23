@@ -41,3 +41,5 @@ report/*.toc
 Thumbs.db
 .vscode/
 .idea/
+grading_tests/
+github_workdir/
