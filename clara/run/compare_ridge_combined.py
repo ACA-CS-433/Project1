@@ -4,23 +4,18 @@ compare_ridge_combined.py
 Comparison table of the ridge regression: each idea is added to a baseline and
 the cross-validated F1 is compared (same folds for every variant).
 
-Sections (run all of them, or pick some: `python compare_ridge_combined.py 1 4`):
+Sections (run all of them, or pick some: `python compare_ridge_combined.py 1 3`):
   1. oversampling of the positives (ratio 1 / 2 / 3), degree 1
   2. extra interaction variables, degree 1
-  3. age features, degree 1
-  4. combined, cumulative: degree 2, then + oversample x3, then + extra
-     variables, then + age features
+  3. combined, cumulative: degree 2, then + oversample x3, then + extra
+     variables
 
 Baseline = degree 1, the 11 interaction variables of preprocessing.py,
 default max_nan_ratio, lambda = 1e-2, no oversampling.
 
-preprocessing.py is not edited: the extra interaction variables are patched in
-memory for each variant and restored afterwards. The age features are built
-here and appended to the matrix.
-
-Setup = 5 folds, seed 1 (build_k_indices). In each fold the
-decision threshold is tuned on the (non-oversampled) training scores and applied
-to the validation fold. Oversampling is applied to the training folds only.
+Setup = 5 folds, seed 1 (build_k_indices). In each fold the decision threshold
+is tuned on the (non-oversampled) training scores and applied to the validation
+fold. Oversampling is applied to the training folds only.
 """
 
 import os
@@ -63,84 +58,38 @@ GROUP_A = {"PHYSHLTH": None, "EXERANY2": None, "_RFBMI5": None}
 GROUP_B = {"EMPLOY1": 8, "INCOME2": None}
 EXTRA = {**GROUP_A, **GROUP_B}
 
-# Age features. _AGE80 is already crossed with the 10 other variables of BASE,
-# so only what is not there is tested.
-AGE = "_AGE80"
-BASE_OTHERS = {k: v for k, v in BASE.items() if k != AGE}
-AGE_SQ = "age^2"
-AGE_NEW = "age x 5 new variables"
-AGE_SQ_BASE = "age^2 x 10 base variables"
-AGE_ALL = (AGE_SQ, AGE_NEW, AGE_SQ_BASE)
-
-# (label, degree, oversampling ratio, extra interaction variables,
-#  age feature groups, lambdas)
+# (label, degree, oversampling ratio, extra interaction variables, lambdas)
 SECTIONS = {
     "1": (
         "Idea 1: oversampling (degree 1)",
         [
-            ("baseline", 1, 1, {}, (), [LAMBDA]),
-            ("oversample x2", 1, 2, {}, (), [LAMBDA]),
-            ("oversample x3", 1, 3, {}, (), [LAMBDA]),
+            ("baseline", 1, 1, {}, [LAMBDA]),
+            ("oversample x2", 1, 2, {}, [LAMBDA]),
+            ("oversample x3", 1, 3, {}, [LAMBDA]),
         ],
     ),
     "2": (
         "Idea 2: extra interaction variables (degree 1)",
         [
-            ("baseline (11 variables)", 1, 1, {}, (), [LAMBDA]),
-            ("+ PHYSHLTH, EXERANY2, _RFBMI5", 1, 1, GROUP_A, (), [LAMBDA]),
-            ("+ EMPLOY1==8, INCOME2", 1, 1, GROUP_B, (), [LAMBDA]),
-            ("+ all 5", 1, 1, EXTRA, (), [LAMBDA]),
+            ("baseline (11 variables)", 1, 1, {}, [LAMBDA]),
+            ("+ PHYSHLTH, EXERANY2, _RFBMI5", 1, 1, GROUP_A, [LAMBDA]),
+            ("+ EMPLOY1==8, INCOME2", 1, 1, GROUP_B, [LAMBDA]),
+            ("+ all 5", 1, 1, EXTRA, [LAMBDA]),
         ],
     ),
     "3": (
-        "Idea 3: age features (degree 1)",
-        [
-            ("baseline", 1, 1, {}, (), [LAMBDA]),
-            ("+ age^2", 1, 1, {}, (AGE_SQ,), [LAMBDA]),
-            ("+ age x 5 new variables", 1, 1, {}, (AGE_NEW,), [LAMBDA]),
-            ("+ age^2 x 10 base variables", 1, 1, {}, (AGE_SQ_BASE,), [LAMBDA]),
-            ("+ all three", 1, 1, {}, AGE_ALL, [LAMBDA]),
-        ],
-    ),
-    "4": (
         "Combined, cumulative",
         [
-            ("1. baseline (d1)", 1, 1, {}, (), LAMBDAS_COMBINED),
-            ("2. + degree 2", 2, 1, {}, (), LAMBDAS_COMBINED),
-            (f"3. + oversample x{OVERSAMPLE}", 2, OVERSAMPLE, {}, (), LAMBDAS_COMBINED),
-            ("4. + 5 extra variables", 2, OVERSAMPLE, EXTRA, (), LAMBDAS_COMBINED),
-            ("5. + age features", 2, OVERSAMPLE, EXTRA, AGE_ALL, LAMBDAS_COMBINED),
+            ("1. baseline (d1)", 1, 1, {}, LAMBDAS_COMBINED),
+            ("2. + degree 2", 2, 1, {}, LAMBDAS_COMBINED),
+            (f"3. + oversample x{OVERSAMPLE}", 2, OVERSAMPLE, {}, LAMBDAS_COMBINED),
+            ("4. + 5 extra variables", 2, OVERSAMPLE, EXTRA, LAMBDAS_COMBINED),
         ],
     ),
 }
 
 # only the last base matrix is kept in memory (they can be > 1 GB)
 _CACHE = {"key": None, "tx": None}
-
-
-def standardize(c):
-    return (c - c.mean()) / max(c.std(), 1e-12)
-
-
-def risk_z(x_clean, names, name, value):
-    """Median-imputed standardized column, as in preprocessing._build_features."""
-    col = x_clean[:, names.index(name)]
-    if value is not None:
-        col = np.where(np.isnan(col), np.nan, (col == value).astype(float))
-    col = np.where(np.isnan(col), np.nanmedian(col), col)
-    return standardize(col)
-
-
-def age_groups(x_clean, names):
-    """Dict group name -> array (N, k) of age features."""
-    age = risk_z(x_clean, names, AGE, None)
-    new = [risk_z(x_clean, names, n, v) for n, v in EXTRA.items()]
-    base = [risk_z(x_clean, names, n, v) for n, v in BASE_OTHERS.items()]
-    return {
-        AGE_SQ: np.column_stack([standardize(age**2)]),
-        AGE_NEW: np.column_stack([standardize(age * z) for z in new]),
-        AGE_SQ_BASE: np.column_stack([standardize(age**2 * z) for z in base]),
-    }
 
 
 def get_tx(x_train, names, degree, extra):
@@ -196,12 +145,6 @@ def main():
 
     x_train, _, y_train, _, _ = load_csv_data(DATA_PATH)
     names = load_feature_names(DATA_PATH)
-
-    rules = preprocessing.special_code_rules(x_train, names)
-    x_clean = preprocessing.clean_special_codes(x_train, names, rules)
-    groups = age_groups(x_clean, names)
-    del x_clean
-
     k_indices = build_k_indices(y_train, K_FOLD, SEED)
 
     tables = []
@@ -209,22 +152,19 @@ def main():
         title, variants = SECTIONS[key]
         print(f"\n=== {title} ===")
         rows = []
-        for label, degree, ratio, extra, ages, lambdas in variants:
+        for label, degree, ratio, extra, lambdas in variants:
             tx = get_tx(x_train, names, degree, extra)
-            tx_v = np.hstack([tx] + [groups[g] for g in ages]) if ages else tx
 
             best = None
             for lambda_ in lambdas:
-                f1_mean, f1_std = cv_f1_ridge(y_train, tx_v, k_indices, lambda_, ratio)
+                f1_mean, f1_std = cv_f1_ridge(y_train, tx, k_indices, lambda_, ratio)
                 print(
-                    f"{label:<32} features={tx_v.shape[1]:<5} lambda={lambda_:.0e} "
+                    f"{label:<32} features={tx.shape[1]:<5} lambda={lambda_:.0e} "
                     f"CV F1 = {f1_mean:.4f} +/- {f1_std:.4f}"
                 )
                 if best is None or f1_mean > best[1]:
                     best = (lambda_, f1_mean, f1_std)
-            rows.append((label, tx_v.shape[1], *best))
-            if ages:
-                del tx_v
+            rows.append((label, tx.shape[1], *best))
         tables.append((title, rows))
 
     print("\n\n=========== Results tables ===========")
