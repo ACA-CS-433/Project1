@@ -6,8 +6,8 @@ from src.helpers import load_csv_data
 from src.utils.cross_validation import cross_validation_ridge_demo
 from src.utils.preprocessing import fit_preprocessing, load_feature_names, transform
 
-SEED = 21
-K_FOLD = 4
+SEED = 1
+K_FOLD = 5
 LAMBDAS = np.logspace(-8, 0, 9)
 
 
