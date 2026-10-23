@@ -14,7 +14,7 @@ import numpy as np
 
 from src.helpers import load_csv_data, create_csv_submission
 from implementations import ridge_regression
-from src.utils.cross_validation import best_threshold
+from src.utils.metrics import best_threshold
 from src.utils.f1_score import f1_score
 
 SEED = 1
@@ -67,7 +67,7 @@ def main():
 
     # 4. Decision threshold: the scores are real numbers, positives are rare,
     # so we choose the threshold that maximizes F1 on the training scores
-    t, f1_train = best_threshold(y_train, tx_train @ w)
+    t, f1_train = best_threshold(tx_train @ w, (y_train + 1) // 2)
     print(f"Threshold = {t:.4f} | training F1 = {f1_train:.4f}")
 
     # 5. Prediction
