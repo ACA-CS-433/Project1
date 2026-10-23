@@ -1,7 +1,7 @@
 """
 run_ridge_combined.py
 
-Ridge, best step of the ablation ladder (compare_combined_ridge.py, step 4):
+Ridge, best step of the combined ladder (compare_ridge_combined.py, section 4, step 4):
   - degree 2, interactions=True
   - 5 extra interaction variables (PHYSHLTH, EXERANY2, _RFBMI5,
     EMPLOY1==8, INCOME2), added in memory: preprocessing.py is not edited

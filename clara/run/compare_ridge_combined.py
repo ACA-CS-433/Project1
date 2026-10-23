@@ -1,10 +1,10 @@
 """
-ablation_ridge.py
+compare_ridge_combined.py
 
-Ablation table of the ridge regression: each idea is added to a baseline and
+Comparison table of the ridge regression: each idea is added to a baseline and
 the cross-validated F1 is compared (same folds for every variant).
 
-Sections (run all of them, or pick some: `python ablation_ridge.py 1 4`):
+Sections (run all of them, or pick some: `python compare_ridge_combined.py 1 4`):
   1. oversampling of the positives (ratio 1 / 2 / 3), degree 1
   2. extra interaction variables, degree 1
   3. age features, degree 1
@@ -227,7 +227,7 @@ def main():
                 del tx_v
         tables.append((title, rows))
 
-    print("\n\n=========== Ablation tables ===========")
+    print("\n\n=========== Results tables ===========")
     for title, rows in tables:
         print_table(title, rows)
 
