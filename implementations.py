@@ -138,14 +138,12 @@ def least_squares(y, tx):
     Returns:
         (w, loss): optimal solution and its MSE loss.
     """
-    #implement least squares
+    # implement least squares
     a = tx.T @ tx
     b = tx.T @ y
     w = np.linalg.solve(a, b)
     mse_loss = calculate_mse(y - tx @ w)
     return w, mse_loss
-
-
 
 
 def ridge_regression(y, tx, lambda_):
@@ -159,12 +157,12 @@ def ridge_regression(y, tx, lambda_):
     Returns:
         (w, loss): solution and its MSE loss WITHOUT the penalty term.
     """
-    N = tx.shape[0] #number of samples
-    D = tx.shape[1] #number de features
+    N = tx.shape[0]  # number of samples
+    D = tx.shape[1]  # number de features
     a = tx.T @ tx + 2 * N * lambda_ * np.identity(D)
     b = tx.T @ y
     w = np.linalg.solve(a, b)
-    mse_loss = np.mean((y - tx @ w)** 2)/2
+    mse_loss = np.mean((y - tx @ w) ** 2) / 2
     return w, mse_loss
 
 
