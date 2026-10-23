@@ -18,7 +18,7 @@ preprocessing.py is not edited: the extra interaction variables are patched in
 memory for each variant and restored afterwards. The age features are built
 here and appended to the matrix.
 
-Setup = the agreed one: 5 folds, seed 1 (build_k_indices). In each fold the
+Setup = 5 folds, seed 1 (build_k_indices). In each fold the
 decision threshold is tuned on the (non-oversampled) training scores and applied
 to the validation fold. Oversampling is applied to the training folds only.
 """
