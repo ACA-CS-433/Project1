@@ -56,9 +56,15 @@ def main():
     print(tx_train.shape)  # check the number of feature
 
     # 3. Cross validation
-    best_lambda, best_f1, best_loss, f1_mean, f1_std, loss_tr, loss_te = (
-        cross_validation_ridge_demo(y_train, tx_train, K_FOLD, LAMBDAS, SEED)
-    )
+    (
+        best_lambda,
+        best_f1,
+        best_loss,
+        f1_mean,
+        f1_std,
+        loss_tr,
+        loss_te,
+    ) = cross_validation_ridge_demo(y_train, tx_train, K_FOLD, LAMBDAS, SEED)
 
     # print best parameters
     print()
