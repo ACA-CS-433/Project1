@@ -2,14 +2,14 @@
 run_mse_gd.py
 
 Reproducibility script required by the project statement (Step 4).
+Code in this file has been written with the help of the ML labs code & LLM
 """
-
-"""Code in this file has been written with the help of the ML labs code & LLM"""
 
 import os
 
 import numpy as np
 
+from src.utils.preprocessing import load_feature_names, transform, fit_preprocessing
 from src.helpers import load_csv_data, create_csv_submission
 from implementations import (
     mean_squared_error_gd,
@@ -21,6 +21,10 @@ from implementations import (
 )
 
 SEED = 1
+
+MAX_NAN_RATIO = 0.7
+DEGREE = 2
+INTERACTIONS = True
 
 # go up 2 levels
 PROJECT_ROOT = os.path.dirname(
@@ -42,33 +46,32 @@ def main():
     print("Test data shape: ", x_test.shape)
     print("Labels shape: ", y_train.shape)
 
+    # Shuffle once: the cross-validation folds are contiguous blocks of rows
+    idx = np.random.permutation(y_train.shape[0])
+    x_train, y_train = x_train[idx], y_train[idx]
+
     # 2. Preprocessing
-    # Handle missing values
-    feature_mean = np.nanmean(x_train, axis=0)
-
-    x_train = np.where(np.isnan(x_train), feature_mean, x_train)
-    x_test = np.where(np.isnan(x_test), feature_mean, x_test)
-    # Scale the features
-    mean_x = np.mean(x_train, axis=0)
-    std_x = np.std(x_train, axis=0)
-
-    # Avoiding division by 0
-    std_x[std_x == 0] = 1
-    tx_train = (x_train - mean_x) / std_x
-    tx_test = (x_test - mean_x) / std_x
-
-    # Add a bias column
-    tx_train = np.c_[np.ones(tx_train.shape[0]), tx_train]
-    tx_test = np.c_[np.ones(tx_test.shape[0]), tx_test]
+    names = load_feature_names(DATA_PATH)
+    params = fit_preprocessing(
+        x_train,
+        names,
+        max_nan_ratio=MAX_NAN_RATIO,
+        degree=DEGREE,
+        interactions=INTERACTIONS,
+    )
+    tx_train = transform(x_train, names, params)
+    tx_test = transform(x_test, names, params)
+    del x_train, x_test
+    print("Number of features after preprocessing: ", tx_train.shape[1])
 
     # 3. Training the final model
     initial_w = np.zeros(tx_train.shape[1])
 
     # best sgd parameters
-    # max iters =   750000 | gamma = 0.00000955 | validation loss = 0.13805878 | f1 score = 0.4058 | threshold = -0.5828
-    max_iters = 750000
-    gamma = 0.00000955
-    best_thd = -0.5828
+    # max iters =   500000 | gamma = 0.00000724 | validation loss = 0.13119623 | f1 score = 0.4294 | threshold = -0.5652
+    max_iters = 500000
+    gamma = 0.00000724
+    best_thd = -0.5652
 
     w, loss = mean_squared_error_sgd(y_train, tx_train, initial_w, max_iters, gamma)
     w[0] -= best_thd

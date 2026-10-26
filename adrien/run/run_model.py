@@ -86,7 +86,7 @@ def parse_args():
     are needed.
     """
     parser.add_argument("--max-iters", type=int, default=500)
-    
+
     """
     Learning rate(s) of gradient descent; several values = grid search.
     Default depends on the model (DEFAULT_GAMMAS): 0.5 for logistic models
