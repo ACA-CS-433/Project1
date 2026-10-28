@@ -141,7 +141,11 @@ def least_squares(y, tx):
     # implement least squares
     a = tx.T @ tx
     b = tx.T @ y
-    w = np.linalg.solve(a, b)
+    try:
+        w = np.linalg.solve(a, b)
+    except np.linalg.LinAlgError:
+        # singular matrix (redundant columns): minimum-norm solution
+        w = np.linalg.pinv(a) @ b
     mse_loss = calculate_mse(y - tx @ w)
     return w, mse_loss
 
