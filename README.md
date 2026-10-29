@@ -31,6 +31,7 @@ AIcrowd team name: `ACA`
 ├── least_squares_and_ridge_regression/     # least squares and ridge: run/ and visualization/
 ├── data/                       # x_train.csv, y_train.csv, x_test.csv (ignored by Git)
 └──  submissions/                # generated CSV files (ignored by Git)
+```
 
 ## Reproducing the results
 
