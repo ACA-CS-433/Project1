@@ -204,7 +204,9 @@ def f1_at_threshold(scores, labels, fold_ids, threshold):
     """Mean / std of the per-fold F1 of out-of-fold predictions with a given
     threshold (same as cv_f1, without choosing the threshold)."""
     f1s = [
-        f1_score(labels[fold_ids == k], (scores[fold_ids == k] >= threshold).astype(int))
+        f1_score(
+            labels[fold_ids == k], (scores[fold_ids == k] >= threshold).astype(int)
+        )
         for k in np.unique(fold_ids)
     ]
     return float(np.mean(f1s)), float(np.std(f1s))
