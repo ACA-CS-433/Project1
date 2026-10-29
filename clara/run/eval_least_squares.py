@@ -50,6 +50,7 @@ def independent_columns(a, tol=1e-6):
             keep.append(j)
     return np.array(keep)
 
+
 def main():
     print("Processing data...")
     x_train, _, y_train, _, _ = load_csv_data(DATA_PATH)
