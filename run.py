@@ -2,13 +2,30 @@
 run.py
 
 Reproducibility script required by the project statement (Step 4).
+
 """
 
 import os
 
+# Multithreaded MKL (Anaconda numpy) can hang in np.linalg.solve for
+# matrices larger than ~500 x 500 (ridge / least squares here), so the
+# linear algebra runs on a single thread. Must be set before importing numpy.
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+
+import argparse
+import sys
+import time
+
 import numpy as np
 
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, PROJECT_ROOT)
+
 from src.helpers import load_csv_data, create_csv_submission
+from src.utils.preprocessing import load_feature_names, fit_preprocessing, transform
+from src.utils.cross_validation2 import cross_validate, cv_f1, oversample_positives
+from src.utils.metrics import f1_score
+from src.utils.calculate_mse import calculate_mse
 from implementations import (
     mean_squared_error_gd,
     mean_squared_error_sgd,
@@ -16,72 +33,314 @@ from implementations import (
     ridge_regression,
     logistic_regression,
     reg_logistic_regression,
+    sigmoid,
 )
-from src.utils.preprocessing import load_feature_names, fit_preprocessing, transform
 
-SEED = 1
+OUTPUT_PATH = os.path.join(PROJECT_ROOT, "submissions", "submission.csv")
 
-MAX_NAN_RATIO = 0.7
-DEGREE = 2
-INTERACTIONS = True
+# model name -> (uses gamma / max_iters, uses lambda_, outputs probabilities)
+MODELS = {
+    "mse_gd": (True, False, False),
+    "mse_sgd": (True, False, False),
+    "least_squares": (False, False, False),
+    "ridge": (False, True, False),
+    "logistic": (True, False, True),
+    "reg_logistic": (True, True, True),
+}
 
-DATA_PATH = "data"
-OUTPUT_PATH = os.path.join("submissions", "submission.csv")
+# default learning rate of each gradient model (when --gamma is not given)
+DEFAULT_GAMMAS = {
+    "mse_gd": 0.04,
+    "mse_sgd": 5e-6,
+    "logistic": 0.5,
+    "reg_logistic": 0.5,
+}
 
-# This file uses mse_gd and get the value of
-# max iters = 750 | gamma = 0.01830206 | validation loss = 0.13053418 | f1 score = 0.4310 | threshold = -0.5753
+
+def parse_args():
+    """Command-line options.
+
+    Options that a model does not use are ignored (e.g. --gamma and
+    --max-iters for ridge / least_squares, --lambda for mse_gd / mse_sgd /
+    logistic / least_squares).
+    """
+    parser = argparse.ArgumentParser()
+
+    """
+    Model to train (default: ridge, our best submission):
+      mse_gd / mse_sgd         linear regression by (stochastic) gradient descent
+      least_squares / ridge    normal equations (no iterations)
+      logistic / reg_logistic  (regularized) logistic regression by gradient descent
+    """
+    parser.add_argument("--model", default="ridge", choices=MODELS.keys())
+
+    """----- Training -----"""
+
+    """
+    Number of gradient descent iterations (gradient models only).
+    For mse_sgd one iteration uses a single sample, so much larger values
+    are needed.
+    """
+    parser.add_argument("--max-iters", type=int, default=500)
+
+    """
+    Learning rate(s) of gradient descent; several values = grid search.
+    Default depends on the model (DEFAULT_GAMMAS): 0.5 for logistic models
+    (1.0 diverges), 0.04 for mse_gd (diverges above ~0.046), 5e-6 for mse_sgd.
+    """
+    parser.add_argument("--gamma", type=float, nargs="+", default=None)
+
+    """
+    Regularization parameter(s) of ridge / reg_logistic; several values =
+    grid search. Must be > 0 for ridge when features are collinear.
+    Default 1e-3: best ridge submission.
+    """
+    parser.add_argument(
+        "--lambda", dest="lambdas", type=float, nargs="+", default=[1e-3]
+    )
+
+    """
+    Number of copies of each positive sample in the training folds
+    (1 = no oversampling). Equivalent to a weight on the positive class;
+    the validation folds keep the true class balance.
+    """
+    parser.add_argument("--oversample", type=int, default=1)
+
+    """
+    Number of cross-validation folds, used to select the hyperparameters
+    and the decision threshold.
+    """
+    parser.add_argument("--k-fold", type=int, default=5)
+
+    """
+    Retrain one model on the whole training set for the test predictions.
+    By default the predictions are the mean of the k fold models of the
+    best configuration (no extra training).
+    """
+    parser.add_argument("--no-ensemble", action="store_true")
+
+    """
+    Decision threshold given by the user (predict 1 if score >= threshold). By default
+    the threshold maximizing the cross-validated F1 is used. For the
+    regression models (mse_gd, mse_sgd, least_squares, ridge) the value is on
+    the scale of {-1, 1} labels, as in angeline/run (e.g. -0.4602 for mse_gd,
+    -0.5828 for mse_sgd); for the logistic models it is a probability.
+    """
+    parser.add_argument("--threshold", type=float, default=None)
+
+    """----- Preprocessing (see src/utils/preprocessing.py) -----"""
+
+    """
+    Add the pairwise products of the key cardiovascular risk factors
+    (INTERACTION_VARIABLES, 55 features). On by default (best submission),
+    --no-interactions to remove them.
+    """
+    parser.add_argument(
+        "--interactions", action=argparse.BooleanOptionalAction, default=True
+    )
+
+    """1 = continuous features as is, 2 = also add their squares."""
+    parser.add_argument("--degree", type=int, default=2, choices=[1, 2])
+
+    """
+    Columns with a larger fraction of missing values (after cleaning the
+    special codes) are removed.
+    """
+    parser.add_argument("--max-nan-ratio", type=float, default=0.8)
+
+    """
+    Categories (and missing-value indicators) present in less than this
+    fraction of the samples are not encoded.
+    """
+    parser.add_argument("--min-freq", type=float, default=0.01)
+
+    """
+    Columns with at most this many distinct values are one-hot encoded,
+    the others are treated as continuous.
+    """
+    parser.add_argument("--max-categories", type=int, default=15)
+
+    """
+    Continuous values are clipped to the [q, 1 - q] quantiles of the
+    training set to limit the effect of outliers.
+    """
+    parser.add_argument("--clip-quantile", type=float, default=0.01)
+
+    """----- Misc -----"""
+
+    """Random seed (shuffling / folds, sample order of mse_sgd)."""
+    parser.add_argument("--seed", type=int, default=1)
+
+    """Use 1/50 of the training set, for quick tests."""
+    parser.add_argument("--sub-sample", action="store_true")
+
+    return parser.parse_args()
+
+
+def make_trainer(model, gamma, lambda_, max_iters, oversample, initial_w):
+    """Function (y, tx) -> w for the given model and hyperparameters."""
+
+    def train(y, tx):
+        y, tx = oversample_positives(y, tx, oversample)
+        if model == "mse_gd":
+            return mean_squared_error_gd(y, tx, initial_w, max_iters, gamma)[0]
+        if model == "mse_sgd":
+            return mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma)[0]
+        if model == "least_squares":
+            return least_squares(y, tx)[0]
+        if model == "ridge":
+            return ridge_regression(y, tx, lambda_)[0]
+        if model == "logistic":
+            return logistic_regression(y, tx, initial_w, max_iters, gamma)[0]
+        return reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma)[0]
+
+    return train
+
+
+def f1_at_threshold(scores, labels, fold_ids, threshold):
+    """Mean / std of the per-fold F1 of out-of-fold predictions with a given
+    threshold (same as cv_f1, without choosing the threshold)."""
+    f1s = [
+        f1_score(
+            labels[fold_ids == k], (scores[fold_ids == k] >= threshold).astype(int)
+        )
+        for k in np.unique(fold_ids)
+    ]
+    return float(np.mean(f1s)), float(np.std(f1s))
+
+
+def validation_loss(scores, labels, probabilistic):
+    """Loss of the out-of-fold predictions (without penalty term).
+
+    Logistic models: mean negative log-likelihood, labels in {0, 1}.
+    Regression models: MSE with the 0.5 factor on the scale of {-1, 1}
+    labels (scores mapped by 2s - 1), comparable with angeline/run.
+    """
+    if probabilistic:
+        p = np.clip(scores, 1e-15, 1 - 1e-15)
+        return float(-np.mean(labels * np.log(p) + (1 - labels) * np.log(1 - p)))
+    return float(calculate_mse((2 * labels - 1) - (2 * scores - 1)))
 
 
 def main():
-    np.random.seed(SEED)
+    args = parse_args()
+    uses_gamma, uses_lambda, probabilistic = MODELS[args.model]
+    if args.gamma is None and uses_gamma:
+        args.gamma = [DEFAULT_GAMMAS[args.model]]
+    gammas = args.gamma if uses_gamma else [None]
+    lambdas = args.lambdas if uses_lambda else [None]
+    print("Configuration:", vars(args))
 
-    print("Processing data...")
+    np.random.seed(args.seed)
+    data_path = os.path.join(PROJECT_ROOT, "data")
+
     # 1. Loading
-    x_train, x_test, y_train, train_ids, test_ids = load_csv_data(DATA_PATH)
-
+    print("Processing data...")
+    x_train, x_test, y_train, _, test_ids = load_csv_data(
+        data_path, sub_sample=args.sub_sample
+    )
     print("Training data shape: ", x_train.shape)
     print("Test data shape: ", x_test.shape)
-    print("Labels shape: ", y_train.shape)
 
     # Shuffle once: the cross-validation folds are contiguous blocks of rows
     idx = np.random.permutation(y_train.shape[0])
     x_train, y_train = x_train[idx], y_train[idx]
 
-    # 2. Preprocessing
-    names = load_feature_names(DATA_PATH)
+    # 2. Preprocessing, fitted on the training set
+    names = load_feature_names(data_path)
     params = fit_preprocessing(
         x_train,
         names,
-        max_nan_ratio=MAX_NAN_RATIO,
-        degree=DEGREE,
-        interactions=INTERACTIONS,
+        max_nan_ratio=args.max_nan_ratio,
+        max_categories=args.max_categories,
+        min_freq=args.min_freq,
+        clip_quantile=args.clip_quantile,
+        degree=args.degree,
+        interactions=args.interactions,
     )
     tx_train = transform(x_train, names, params)
     tx_test = transform(x_test, names, params)
     del x_train, x_test
     print("Number of features after preprocessing: ", tx_train.shape[1])
 
-    # 3. Training the final model
+    # Labels in {0, 1} for every model: for the regression models this is an
+    # affine change of {-1, 1}, which gives the same ranking of the samples,
+    # hence the same F1 after threshold tuning
+    y = (y_train + 1) / 2
+
+    # threshold given on the {-1, 1} scale -> same affine change
+    user_th = args.threshold
+    if user_th is not None and not probabilistic:
+        user_th = (user_th + 1) / 2
+
+    # 3. Grid search with k-fold cross-validation
+    if probabilistic:
+        predict = lambda tx, w: sigmoid(tx @ w)
+    else:
+        predict = lambda tx, w: tx @ w
     initial_w = np.zeros(tx_train.shape[1])
+    best = None
+    for gamma in gammas:
+        for lambda_ in lambdas:
+            t0 = time.time()
+            train = make_trainer(
+                args.model, gamma, lambda_, args.max_iters, args.oversample, initial_w
+            )
+            try:
+                scores, labels, folds, ws = cross_validate(
+                    y, tx_train, train, predict, args.k_fold, return_models=True
+                )
+            except np.linalg.LinAlgError:
+                print(
+                    f"gamma={gamma} lambda={lambda_}: singular matrix "
+                    "(collinear features), try --model ridge with a small --lambda"
+                )
+                continue
+            if not np.isfinite(scores).all():
+                print(f"gamma={gamma} lambda={lambda_}: diverged, lower --gamma")
+                continue
+            if user_th is None:
+                th, f1_mean, f1_std = cv_f1(scores, labels, folds)
+            else:
+                th = user_th
+                f1_mean, f1_std = f1_at_threshold(scores, labels, folds, th)
+            loss = validation_loss(scores, labels, probabilistic)
+            print(
+                f"gamma={gamma} lambda={lambda_} cv_F1={f1_mean:.4f} "
+                f"+/- {f1_std:.4f} threshold={th:.4f} val_loss={loss:.6f} "
+                f"({time.time() - t0:.0f}s)"
+            )
+            if best is None or f1_mean > best[0]:
+                best = (f1_mean, f1_std, gamma, lambda_, th, loss, ws)
 
-    # best gradient descent parameters
-    # max iters =      750 | gamma = 0.01830206 | validation loss = 0.13053418 | f1 score = 0.4310 | threshold = -0.5753
-    max_iters = 750
-    gamma = 0.01830206
-    best_thd = -0.5753
+    if best is None:
+        sys.exit("No configuration could be trained.")
+    f1_mean, f1_std, gamma, lambda_, th, loss, ws = best
+    print(
+        f"Best: gamma={gamma} lambda={lambda_} threshold={th:.4f} "
+        f"cv_F1={f1_mean:.4f} +/- {f1_std:.4f} val_loss={loss:.6f}"
+    )
 
-    w, loss = mean_squared_error_gd(y_train, tx_train, initial_w, max_iters, gamma)
-    w[0] -= best_thd
+    # 4. Final model
+    if args.no_ensemble:
+        train = make_trainer(
+            args.model, gamma, lambda_, args.max_iters, args.oversample, initial_w
+        )
+        scores_test = predict(tx_test, train(y, tx_train))
+    else:
+        # average of the k fold models: the threshold was chosen on the
+        # out-of-fold predictions of these same models
+        scores_test = np.mean([predict(tx_test, w) for w in ws], axis=0)
+        print(f"Ensemble of the {len(ws)} fold models")
 
-    print("Training loss:", loss)
+    # 5. Prediction (required by the submission format: {-1, 1})
+    y_pred = np.where(scores_test >= th, 1, -1)
+    print("Predicted positive rate on test: ", np.mean(y_pred == 1))
 
-    # 4. Prediction
-    y_pred = tx_test.dot(w)
-    # required by the submission format
-    y_pred = np.where(y_pred >= 0, 1, -1)
-
-    # 5. Writing the submission file
+    # 6. Writing the submission file
+    os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
     create_csv_submission(test_ids, y_pred, OUTPUT_PATH)
+    print("Submission written to", OUTPUT_PATH)
 
 
 if __name__ == "__main__":
