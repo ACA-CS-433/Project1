@@ -1,4 +1,9 @@
-"""Plain least squares (normal equations) on ALL columns, no fallback.
+"""
+
+eval_least_squares_raw.py
+Code in this file has been written with the help of the ML labs code & LLM
+
+Plain least squares (normal equations) on ALL columns, no fallback.
 Same setup as the ridge row: 16 variables, degree 2, oversampling x3,
 5 folds, seed 1."""
 

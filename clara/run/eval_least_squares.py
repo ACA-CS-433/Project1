@@ -1,4 +1,8 @@
-"""Out-of-sample F1 of plain least squares (normal equations, no penalty),
+"""
+eval_least_squares.py
+Code in this file has been written with the help of the ML labs code & LLM
+
+Out-of-sample F1 of plain least squares (normal equations, no penalty),
 on the rich features with linearly dependent columns removed."""
 
 import os

@@ -1,5 +1,6 @@
 """
 compare_ridge_combined.py
+Code in this file has been written with the help of the ML labs code & LLM
 
 Comparison table of the ridge regression: each idea is added to a baseline and
 the cross-validated F1 is compared (same folds for every variant).

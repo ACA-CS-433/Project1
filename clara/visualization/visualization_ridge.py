@@ -1,4 +1,8 @@
-"""Ridge F1 vs lambda on the final configuration:
+"""
+visualization_ridge.py
+Code in this file has been written with the help of the ML labs code & LLM
+
+Ridge F1 vs lambda on the final configuration:
 degree 2, 16 interaction variables (614 columns), positives oversampled x3
 in the training folds only, 5 folds, seed 1."""
 

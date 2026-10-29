@@ -1,4 +1,8 @@
-"""Validation MSE, threshold and F1 of the final ridge configuration
+"""
+eval_ridge_loss.py
+Code in this file has been written with the help of the ML labs code & LLM
+
+Validation MSE, threshold and F1 of the final ridge configuration
 (614 columns, oversampling x3, lambda = 1e-3), 5 folds, seed 1."""
 
 import os
