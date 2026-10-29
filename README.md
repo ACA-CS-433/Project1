@@ -30,9 +30,7 @@ AIcrowd team name: `ACA`
 ├── gradient_descent_and_stochastic_gd/     # MSE gd / sgd: run/ and visualization/
 ├── least_squares_and_ridge_regression/     # least squares and ridge: run/ and visualization/
 ├── data/                       # x_train.csv, y_train.csv, x_test.csv (ignored by Git)
-├── submissions/                # generated CSV files (ignored by Git)
-└── report/                     # LaTeX report, 2 pages max
-```
+└──  submissions/                # generated CSV files (ignored by Git)
 
 ## Reproducing the results
 
