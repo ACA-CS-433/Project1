@@ -18,19 +18,37 @@ AIcrowd team name: `ACA`
 
 ```
 .
-├── run.py                      # reproduces the best submissiont
+├── run.py                      # reproduces the best submission (AIcrowd F1 0.444)
 ├── implementations.py          # the 6 methods required by the project statement
 ├── README.md
 ├── .gitignore
 ├── requirements.txt
-├── src/    
+├── src/
 │   ├── helpers.py              # provided by the course (CSV loading + submission)
-│   ├── utils/
-│   └── tests/
-├── data/                       # x_train.csv, y_train.csv, x_testcsv (ignored by Git)
-├── submissions/
-└── report/                     # LaTeX (or Typst) report, 2 pages max
+│   └── utils/                  # preprocessing, cross-validation, metrics, plots
+├── adrien/                     # logistic regression: run/ (scripts, comparisons)
+├── angeline/                   # MSE gd / sgd: run/ and visualization/
+├── clara/                      # least squares and ridge: run/ and visualization/
+├── data/                       # x_train.csv, y_train.csv, x_test.csv (ignored by Git)
+├── submissions/                # generated CSV files (ignored by Git)
+└── report/                     # LaTeX report, 2 pages max
 ```
+
+## Reproducing the results
+
+Run every command from the project root.
+
+| Result | Command |
+|---|---|
+| Best submission (AIcrowd F1 0.444) | `python run.py` |
+| Ridge with simple preprocessing (test F1 0.421) | `PYTHONPATH=. python clara/run/run_ridge.py` |
+| Ridge ablation table (5-fold CV, seed 1) | `PYTHONPATH=. python clara/run/compare_ridge_combined.py` |
+| Validation loss and threshold of ridge | `PYTHONPATH=. python clara/run/eval_ridge_loss.py` |
+| Least squares on independent columns | `PYTHONPATH=. python clara/run/eval_least_squares.py` |
+| Least squares on all 614 columns (fails: singular matrix) | `PYTHONPATH=. python clara/run/eval_least_squares_raw.py` |
+| F1 vs lambda curve | `PYTHONPATH=. python clara/visualization/visualization_ridge.py` |
+
+Scripts of the other methods are in `adrien/run` and `angeline/run`.
 
 ## Project constraints
 
