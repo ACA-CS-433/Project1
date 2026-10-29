@@ -67,8 +67,10 @@ def main():
         )
         f1s.append(f1_te)
     if f1s:
-        print(f"real least squares: {len(f1s)}/{K_FOLD} folds ran, "
-              f"mean F1 = {np.mean(f1s):.4f} +/- {np.std(f1s):.4f}")
+        print(
+            f"real least squares: {len(f1s)}/{K_FOLD} folds ran, "
+            f"mean F1 = {np.mean(f1s):.4f} +/- {np.std(f1s):.4f}"
+        )
 
 
 if __name__ == "__main__":
