@@ -2,34 +2,38 @@
 run.py
 
 Reproducibility script required by the project statement (Step 4).
+Produces the submission that scored 0.444 on AIcrowd:
+ridge regression (lambda = 1e-3), degree 2, interactions (16 variables),
+positives oversampled x3, decision threshold tuned on F1.
 """
 
 import os
 
 import numpy as np
 
+from implementations import ridge_regression
 from src.helpers import load_csv_data, create_csv_submission
-from implementations import (
-    mean_squared_error_gd,
-    mean_squared_error_sgd,
-    least_squares,
-    ridge_regression,
-    logistic_regression,
-    reg_logistic_regression,
-)
-from src.utils.preprocessing import load_feature_names, fit_preprocessing, transform
+from src.utils import preprocessing
+from src.utils.cross_validation2 import oversample_positives
+from src.utils.metrics import best_threshold
+from src.utils.preprocessing import fit_preprocessing, load_feature_names, transform
 
 SEED = 1
-
-MAX_NAN_RATIO = 0.7
 DEGREE = 2
-INTERACTIONS = True
+LAMBDA = 1e-3
+OVERSAMPLE = 3
+
+# extra interaction variables (None = numeric column, int v = indicator == v)
+EXTRA_VARIABLES = {
+    "PHYSHLTH": None,
+    "EXERANY2": None,
+    "_RFBMI5": None,
+    "EMPLOY1": 8,
+    "INCOME2": None,
+}
 
 DATA_PATH = "data"
 OUTPUT_PATH = os.path.join("submissions", "submission.csv")
-
-# This file uses mse_gd and get the value of
-# max iters = 750 | gamma = 0.01830206 | validation loss = 0.13053418 | f1 score = 0.4310 | threshold = -0.5753
 
 
 def main():
@@ -37,51 +41,39 @@ def main():
 
     print("Processing data...")
     # 1. Loading
-    x_train, x_test, y_train, train_ids, test_ids = load_csv_data(DATA_PATH)
-
-    print("Training data shape: ", x_train.shape)
-    print("Test data shape: ", x_test.shape)
-    print("Labels shape: ", y_train.shape)
-
-    # Shuffle once: the cross-validation folds are contiguous blocks of rows
-    idx = np.random.permutation(y_train.shape[0])
-    x_train, y_train = x_train[idx], y_train[idx]
-
-    # 2. Preprocessing
+    x_train, x_test, y_train, _, test_ids = load_csv_data(DATA_PATH)
     names = load_feature_names(DATA_PATH)
-    params = fit_preprocessing(
-        x_train,
-        names,
-        max_nan_ratio=MAX_NAN_RATIO,
-        degree=DEGREE,
-        interactions=INTERACTIONS,
-    )
-    tx_train = transform(x_train, names, params)
-    tx_test = transform(x_test, names, params)
+
+    # 2. Preprocessing (extra variables added in memory only)
+    base_variables = dict(preprocessing.INTERACTION_VARIABLES)
+    preprocessing.INTERACTION_VARIABLES = {**base_variables, **EXTRA_VARIABLES}
+    try:
+        params = fit_preprocessing(x_train, names, degree=DEGREE, interactions=True)
+        tx_train = transform(x_train, names, params)
+        tx_test = transform(x_test, names, params)
+    finally:
+        preprocessing.INTERACTION_VARIABLES = base_variables
     del x_train, x_test
-    print("Number of features after preprocessing: ", tx_train.shape[1])
+    print("Number of features after preprocessing:", tx_train.shape[1])
 
-    # 3. Training the final model
-    initial_w = np.zeros(tx_train.shape[1])
-
-    # best gradient descent parameters
-    # max iters =      750 | gamma = 0.01830206 | validation loss = 0.13053418 | f1 score = 0.4310 | threshold = -0.5753
-    max_iters = 750
-    gamma = 0.01830206
-    best_thd = -0.5753
-
-    w, loss = mean_squared_error_gd(y_train, tx_train, initial_w, max_iters, gamma)
-    w[0] -= best_thd
-
+    # 3. Training: oversample the positives, then ridge regression
+    y_os, tx_os = oversample_positives(y_train, tx_train, OVERSAMPLE)
+    w, loss = ridge_regression(y_os, tx_os, LAMBDA)
+    del y_os, tx_os
     print("Training loss:", loss)
 
-    # 4. Prediction
-    y_pred = tx_test.dot(w)
-    # required by the submission format
-    y_pred = np.where(y_pred >= 0, 1, -1)
+    # 4. Threshold tuned on the original (non-oversampled) training scores
+    t, f1_train = best_threshold(tx_train @ w, (y_train + 1) // 2)
+    print(f"Threshold = {t:.4f} | training F1 = {f1_train:.4f}")
 
-    # 5. Writing the submission file
+    # 5. Prediction
+    y_pred = np.where(tx_test @ w >= t, 1, -1)
+    print("Predicted positive rate on test:", np.mean(y_pred == 1))
+
+    # 6. Writing the submission file
+    os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
     create_csv_submission(test_ids, y_pred, OUTPUT_PATH)
+    print("Submission written to", OUTPUT_PATH)
 
 
 if __name__ == "__main__":

@@ -39,7 +39,7 @@ from src.utils.preprocessing import fit_preprocessing, load_feature_names, trans
 
 SEED = 1
 K_FOLD = 5
-LAMBDA = 1e-2
+LAMBDA = 1e-3
 LAMBDAS_COMBINED = [1e-3, 1e-2]  # degree 2 may prefer a smaller lambda
 OVERSAMPLE = 3
 DATA_PATH = os.path.join(PROJECT_ROOT, "data")
@@ -80,6 +80,7 @@ SECTIONS = {
     "3": (
         "Combined, cumulative",
         [
+            ("0. no interactions (d1)", 1, 1, "NOINT", LAMBDAS_COMBINED),
             ("1. baseline (d1)", 1, 1, {}, LAMBDAS_COMBINED),
             ("2. + degree 2", 2, 1, {}, LAMBDAS_COMBINED),
             (f"3. + oversample x{OVERSAMPLE}", 2, OVERSAMPLE, {}, LAMBDAS_COMBINED),
@@ -93,13 +94,17 @@ _CACHE = {"key": None, "tx": None}
 
 
 def get_tx(x_train, names, degree, extra):
-    """Preprocessed matrix for this degree / extra variables (cached)."""
-    key = (degree, tuple(sorted(extra)))
+    """Preprocessed matrix for this degree / extra variables (cached).
+    extra = "NOINT" means no interaction terms at all."""
+    no_int = extra == "NOINT"
+    key = (degree, "NOINT" if no_int else tuple(sorted(extra)))
     if _CACHE["key"] != key:
         _CACHE["tx"] = None  # free the memory before rebuilding
         try:
-            preprocessing.INTERACTION_VARIABLES = {**BASE, **extra}
-            params = fit_preprocessing(x_train, names, degree=degree, interactions=True)
+            preprocessing.INTERACTION_VARIABLES = {**BASE, **({} if no_int else extra)}
+            params = fit_preprocessing(
+                x_train, names, degree=degree, interactions=not no_int
+            )
             _CACHE["tx"] = transform(x_train, names, params)
         finally:
             preprocessing.INTERACTION_VARIABLES = BASE

@@ -10,6 +10,13 @@ Code in this file has been written with the help of the ML labs code & LLM
 """
 
 import os
+import sys
+
+# go up 2 levels (same convention as the other run scripts)
+PROJECT_ROOT = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+sys.path.insert(0, PROJECT_ROOT)
 
 import numpy as np
 
@@ -32,8 +39,8 @@ DATA_PATH = os.path.join(PROJECT_ROOT, "data")
 
 # Configuration
 
-SEED = 21
-K_FOLD = 4
+SEED = 1
+K_FOLD = 5
 # lambda = 0 first: least squares baseline (not drawn on the log-scale plots)
 LAMBDAS = np.concatenate(([0.0], np.logspace(-8, 0, 15)))
 
@@ -51,7 +58,7 @@ def main():
 
     # 2. Preprocessing
     names = load_feature_names(DATA_PATH)
-    params = fit_preprocessing(x_train, names, degree=1, interactions=False)
+    params = fit_preprocessing(x_train, names, degree=2, interactions=True)
     tx_train = transform(x_train, names, params)
     print(tx_train.shape)  # check the number of feature
 

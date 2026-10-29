@@ -1,85 +1,93 @@
-"""
-run_least_squares.py
-
-Reproducibility script: trains least squares regression with lambda = 0,
-tunes the decision threshold on F1, and writes the submission file.
-"""
-
-"""Code in this file has been written with the help of the ML labs code & LLM"""
+"""Out-of-sample F1 of plain least squares (normal equations, no penalty),
+on the rich features with linearly dependent columns removed."""
 
 import os
 import sys
 
 import numpy as np
 
-# go up 2 levels (same convention as the other run scripts)
 PROJECT_ROOT = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
 sys.path.insert(0, PROJECT_ROOT)
 
-from src.helpers import load_csv_data, create_csv_submission
 from implementations import least_squares
-from src.utils.metrics import best_threshold
-from src.utils.f1_score import f1_score
+from src.helpers import load_csv_data
+from src.utils.build_k_indices import build_k_indices
+from src.utils.metrics import best_threshold, f1_score
+from src.utils.preprocessing import fit_preprocessing, load_feature_names, transform
+from src.utils import preprocessing
+from src.utils.cross_validation2 import oversample_positives
+
+OVERSAMPLE = 3
+EXTRA_VARIABLES = {
+    "PHYSHLTH": None,
+    "EXERANY2": None,
+    "_RFBMI5": None,
+    "EMPLOY1": 8,
+    "INCOME2": None,
+}
 
 SEED = 1
-
-# go up 2 levels
-PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
-
+K_FOLD = 5
+DEGREE = 2
 DATA_PATH = os.path.join(PROJECT_ROOT, "data")
-OUTPUT_PATH = os.path.join(PROJECT_ROOT, "submissions", "submission_least_squares.csv")
 
+
+def independent_columns(a, tol=1e-6):
+    """Greedy choice of linearly independent columns, using only a = X^T X.
+    A column is kept if its part not explained by the kept columns
+    is larger than tol (relative to its own norm)."""
+    keep = []
+    for j in range(a.shape[0]):
+        if keep:
+            sub = a[np.ix_(keep, keep)]
+            coef = np.linalg.solve(sub, a[keep, j])
+            resid = a[j, j] - a[keep, j] @ coef
+        else:
+            resid = a[j, j]
+        if resid > tol * a[j, j]:
+            keep.append(j)
+    return np.array(keep)
 
 def main():
-    np.random.seed(SEED)
-
     print("Processing data...")
-    # 1. Loading
-    x_train, x_test, y_train, train_ids, test_ids = load_csv_data(DATA_PATH)
+    x_train, _, y_train, _, _ = load_csv_data(DATA_PATH)
+    names = load_feature_names(DATA_PATH)
 
-    print("Training data shape: ", x_train.shape)
-    print("Test data shape: ", x_test.shape)
-    print("Labels shape: ", y_train.shape)
+    # same 16 interaction variables as the ridge run (patched in memory only)
+    base_variables = dict(preprocessing.INTERACTION_VARIABLES)
+    preprocessing.INTERACTION_VARIABLES = {**base_variables, **EXTRA_VARIABLES}
+    try:
+        params = fit_preprocessing(x_train, names, degree=DEGREE, interactions=True)
+        tx = transform(x_train, names, params)
+    finally:
+        preprocessing.INTERACTION_VARIABLES = base_variables
 
-    # 2. Preprocessing (same as the other methods, so results are comparable)
-    # Handle missing values
-    feature_mean = np.nanmean(x_train, axis=0)
+    # chosen once on the features only (no labels, so no leakage)
+    keep = independent_columns(tx.T @ tx)
+    tx = tx[:, keep]
+    a = tx.T @ tx
+    print(f"columns kept: {tx.shape[1]}")
+    print(f"rank(X^T X) = {np.linalg.matrix_rank(a)} | cond = {np.linalg.cond(a):.2e}")
 
-    x_train = np.where(np.isnan(x_train), feature_mean, x_train)
-    x_test = np.where(np.isnan(x_test), feature_mean, x_test)
-    # Scale the features
-    mean_x = np.mean(x_train, axis=0)
-    std_x = np.std(x_train, axis=0)
+    y01 = (y_train + 1) // 2
+    k_indices = build_k_indices(y_train, K_FOLD, SEED)
+    f1s = []
+    for k in range(K_FOLD):
+        te = k_indices[k]
+        tr = k_indices[np.arange(K_FOLD) != k].reshape(-1)
 
-    # Avoiding division by 0
-    std_x[std_x == 0] = 1
-    tx_train = (x_train - mean_x) / std_x
-    tx_test = (x_test - mean_x) / std_x
+        # oversample the positives in the training fold only
+        y_os, x_os = oversample_positives(y_train[tr], tx[tr], OVERSAMPLE)
+        w, _ = least_squares(y_os, x_os)  # plain normal equations
 
-    # Add a bias column
-    tx_train = np.c_[np.ones(tx_train.shape[0]), tx_train]
-    tx_test = np.c_[np.ones(tx_test.shape[0]), tx_test]
-
-    # 3. Training the final model on all the training data
-    w, loss = least_squares(y_train, tx_train)
-    print("Training loss:", loss)
-
-    # 4. Decision threshold: the scores are real numbers, positives are rare,
-    # so we choose the threshold that maximizes F1 on the training scores
-    t, f1_train = best_threshold(tx_train @ w, (y_train + 1) // 2)
-    print(f"Threshold = {t:.4f} | training F1 = {f1_train:.4f}")
-
-    # 5. Prediction
-    scores_test = tx_test @ w
-    # required by the submission format
-    y_pred = np.where(scores_test >= t, 1, -1)
-
-    # 6. Writing the submission file
-    create_csv_submission(test_ids, y_pred, OUTPUT_PATH)
+        # threshold on the original (non-oversampled) training scores
+        t, f1_tr = best_threshold(tx[tr] @ w, y01[tr])
+        f1_te = f1_score(y01[te], (tx[te] @ w >= t).astype(int))
+        print(f"fold {k}: train F1 = {f1_tr:.4f} | validation F1 = {f1_te:.4f}")
+        f1s.append(f1_te)
+    print(f"least squares CV F1 = {np.mean(f1s):.4f} +/- {np.std(f1s):.4f}")
 
 
 if __name__ == "__main__":
