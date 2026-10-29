@@ -9,7 +9,7 @@ Examples (from the project root):
     python -u adrien/run/run_model.py --model reg_logistic --max-iters 1500 \
         --gamma 0.5 --lambda 0 1e-4 1e-3 --interactions
     python -u adrien/run/run_model.py --model ridge --lambda 1e-5 1e-4 1e-3
-    python -u adrien/run/run_model.py --model mse_gd --max-iters 500 --gamma 0.01 0.05
+    python -u adrien/run/run_model.py --model mse_gd --max-iters 500 --gamma 0.01 0.04
     python -u adrien/run/run_model.py --model logistic --sub-sample --max-iters 100
 
 Every option is documented in parse_args() below.
@@ -31,6 +31,7 @@ sys.path.insert(0, PROJECT_ROOT)
 from src.helpers import load_csv_data, create_csv_submission
 from src.utils.preprocessing import load_feature_names, fit_preprocessing, transform
 from src.utils.cross_validation2 import cross_validate, cv_f1, oversample_positives
+from src.utils.metrics import f1_score
 from implementations import (
     mean_squared_error_gd,
     mean_squared_error_sgd,
@@ -49,6 +50,14 @@ MODELS = {
     "ridge": (False, True, False),
     "logistic": (True, False, True),
     "reg_logistic": (True, True, True),
+}
+
+# default learning rate of each gradient model (when --gamma is not given)
+DEFAULT_GAMMAS = {
+    "mse_gd": 0.04,
+    "mse_sgd": 5e-6,
+    "logistic": 0.5,
+    "reg_logistic": 0.5,
 }
 
 
@@ -80,10 +89,10 @@ def parse_args():
 
     """
     Learning rate(s) of gradient descent; several values = grid search.
-    About 0.5 for logistic models (1.0 diverges), much smaller
-    (0.01 - 0.05) for mse_gd.
+    Default depends on the model (DEFAULT_GAMMAS): 0.5 for logistic models
+    (1.0 diverges), 0.04 for mse_gd (diverges above ~0.046), 5e-6 for mse_sgd.
     """
-    parser.add_argument("--gamma", type=float, nargs="+", default=[0.5])
+    parser.add_argument("--gamma", type=float, nargs="+", default=None)
 
     """
     Regularization parameter(s) of ridge / reg_logistic; several values =
@@ -112,6 +121,15 @@ def parse_args():
     best configuration (no extra training).
     """
     parser.add_argument("--no-ensemble", action="store_true")
+
+    """
+    Decision threshold given by the user (predict 1 if score >= threshold). By default
+    the threshold maximizing the cross-validated F1 is used. For the
+    regression models (mse_gd, mse_sgd, least_squares, ridge) the value is on
+    the scale of {-1, 1} labels, as in angeline/run (e.g. -0.4602 for mse_gd,
+    -0.5828 for mse_sgd); for the logistic models it is a probability.
+    """
+    parser.add_argument("--threshold", type=float, default=None)
 
     """----- Preprocessing (see src/utils/preprocessing.py) -----"""
 
@@ -182,9 +200,21 @@ def make_trainer(model, gamma, lambda_, max_iters, oversample, initial_w):
     return train
 
 
+def f1_at_threshold(scores, labels, fold_ids, threshold):
+    """Mean / std of the per-fold F1 of out-of-fold predictions with a given
+    threshold (same as cv_f1, without choosing the threshold)."""
+    f1s = [
+        f1_score(labels[fold_ids == k], (scores[fold_ids == k] >= threshold).astype(int))
+        for k in np.unique(fold_ids)
+    ]
+    return float(np.mean(f1s)), float(np.std(f1s))
+
+
 def main():
     args = parse_args()
     uses_gamma, uses_lambda, probabilistic = MODELS[args.model]
+    if args.gamma is None and uses_gamma:
+        args.gamma = [DEFAULT_GAMMAS[args.model]]
     gammas = args.gamma if uses_gamma else [None]
     lambdas = args.lambdas if uses_lambda else [None]
     output = args.output or os.path.join(
@@ -229,6 +259,11 @@ def main():
     # hence the same F1 after threshold tuning
     y = (y_train + 1) / 2
 
+    # threshold given on the {-1, 1} scale -> same affine change
+    user_th = args.threshold
+    if user_th is not None and not probabilistic:
+        user_th = (user_th + 1) / 2
+
     # 3. Grid search with k-fold cross-validation
     if probabilistic:
         predict = lambda tx, w: sigmoid(tx @ w)
@@ -255,7 +290,11 @@ def main():
             if not np.isfinite(scores).all():
                 print(f"gamma={gamma} lambda={lambda_}: diverged, lower --gamma")
                 continue
-            th, f1_mean, f1_std = cv_f1(scores, labels, folds)
+            if user_th is None:
+                th, f1_mean, f1_std = cv_f1(scores, labels, folds)
+            else:
+                th = user_th
+                f1_mean, f1_std = f1_at_threshold(scores, labels, folds, th)
             print(
                 f"gamma={gamma} lambda={lambda_} cv_F1={f1_mean:.4f} "
                 f"+/- {f1_std:.4f} threshold={th:.4f} ({time.time() - t0:.0f}s)"
